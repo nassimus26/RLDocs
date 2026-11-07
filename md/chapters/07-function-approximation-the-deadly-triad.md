@@ -1,0 +1,377 @@
+# Chapter 7: Function Approximation and the Deadly Triad
+
+[← Previous: TD Control: SARSA, Q-Learning, and Exploration](06-td-control.md) | [Table of contents](../main.md#chapters) | [Next: Deep Q-Networks and Double DQN](08-deep-q-networks-dqn-double-dqn.md) →
+
+
+Chapters 3–6 stored value in a **table**, one entry $V(s)$ or $Q(s,a)$ per state or pair, updated only at visited keys. Chapter 6 then specified how to choose $A_t$ from that table ($\varepsilon$-greedy or softmax). Tabular control is fine when $\mathcal{S}$ and $\mathcal{A}$ are small and discrete, as in Chapters 3–6. The same $s$ returns, and the same cell is updated. Many tasks have continuous states, images, or huge discrete spaces. Then a separate number for every $(s,a)$ runs into two problems: the table does not fit in memory, and a later observed state is almost never that same $s$, so the stored number is not used again.
+
+**Function approximation** addresses both. In the tabular case the object we store is a whole map—either $s\mapsto V(s)$ or $(s,a)\mapsto Q(s,a)$—one free number per key. Replace that map by a function of a weight vector $\mathbf{w}\in\mathbb{R}^d$ with components $w_1,\ldots,w_d$:
+
+```math
+\hat{V}(s;\mathbf{w})\approx V(s)\qquad\text{or}\qquad\hat{Q}(s,a;\mathbf{w})\approx Q(s,a),
+```
+
+with $d$ much smaller than the number of keys (or finite $d$ even when $\mathcal{S}$ is continuous). Only the $d$ weights are stored and updated. For action-values we use a **feature map** $\mathbf{x}$: given $(s,a)$, it returns a feature vector $\mathbf{x}(s,a)\in\mathbb{R}^d$ of the same length as $\mathbf{w}$. The map itself is fixed—the same pair always produces the same vector; different pairs may produce different vectors. The linear case in (7.1) is the inner product $\hat{Q}(s,a;\mathbf{w})=\mathbf{w}^\top\mathbf{x}(s,a)$. (State-values use an analogous $\mathbf{x}(s)\in\mathbb{R}^d$ and $\hat{V}(s;\mathbf{w})=\mathbf{w}^\top\mathbf{x}(s)$.) At time $t$ one writes $\mathbf{x}_t=\mathbf{x}(S_t,A_t)$ for that step’s feature vector. Changing $\mathbf{w}$ changes the prediction at every input whose features use those weights, so experience at one key transfers to others—that is generalization. The rest of this section and Chapter 8 develop the $Q$ form used for control; the $V$ form is the same idea for prediction. Exploration is unchanged: $\varepsilon$-greedy or softmax still choose $A_t$ from predicted action-values (Chapter 6). What changes is the representation and the update.
+
+This section develops that idea in two steps. First, Section 7.1 lifts tabular control to a linear approximator: off-policy Q-learning FA (7.3) and on-policy SARSA FA (7.4). Function approximation itself is neither on-policy nor off-policy—that label belongs to the update. Second, Section 7.2 discusses the **deadly triad**, in which off-policy semi-gradient FA can diverge, while on-policy linear FA is known to be stable. Chapter 8 then introduces the practical fixes used in deep Q-learning.
+
+## 7.1 Linear Function Approximation
+
+As discussed at the start of this section, a separate table entry for every $(s,a)$ is often infeasible, so we represent $Q$ by a function of weights. The linear form is
+
+```math
+\hat{Q}(s,a;\mathbf{w})=\mathbf{w}^\top \mathbf{x}(s,a)=\sum_{i=1}^{d} w_i\, x_i(s,a),\quad (7.1)
+```
+
+with a fixed feature map $\mathbf{x}(s,a)\in\mathbb{R}^d$. Only $\mathbf{w}$ is learned. Differentiating (7.1) gives
+
+```math
+\nabla_{\mathbf{w}} \hat{Q}(s,a;\mathbf{w})=\mathbf{x}(s,a).\quad (7.2)
+```
+
+For state-values the same construction uses features of the state alone, $\hat{V}(s;\mathbf{w})=\mathbf{w}^\top\mathbf{x}(s)$.
+
+We still learn online over episodes. At each time step $t$ of an episode, the agent is at $(S_t,A_t)$, observes a transition, and updates $\mathbf{w}$ once. Write $\mathbf{x}_t=\mathbf{x}(S_t,A_t)$ and $\hat{Q}_t=\hat{Q}(S_t,A_t;\mathbf{w})=\mathbf{w}^\top\mathbf{x}_t$. The TD control updates from Chapter 6 carry over with the table $Q$ replaced by the approximator $\hat{Q}$. **On-policy** (SARSA) is
+
+```math
+\begin{aligned}\hat{Q}(S_t,A_t;\mathbf{w})&\leftarrow\hat{Q}(S_t,A_t;\mathbf{w})+\alpha\bigl[R_{t+1}+\gamma\hat{Q}(S_{t+1},A_{t+1};\mathbf{w})-\hat{Q}(S_t,A_t;\mathbf{w})\bigr]\\&=\hat{Q}(S_t,A_t;\mathbf{w})+\alpha\bigl(U_t-\hat{Q}(S_t,A_t;\mathbf{w})\bigr),\end{aligned}
+```
+
+with $U_t=R_{t+1}+\gamma\hat{Q}(S_{t+1},A_{t+1};\mathbf{w})$. **Off-policy** (Q-learning) is
+
+```math
+\begin{aligned}\hat{Q}(S_t,A_t;\mathbf{w})&\leftarrow\hat{Q}(S_t,A_t;\mathbf{w})+\alpha\bigl[R_{t+1}+\gamma\max_{a'}\hat{Q}(S_{t+1},a';\mathbf{w})-\hat{Q}(S_t,A_t;\mathbf{w})\bigr]\\&=\hat{Q}(S_t,A_t;\mathbf{w})+\alpha\bigl(U_t-\hat{Q}(S_t,A_t;\mathbf{w})\bigr),\end{aligned}
+```
+
+with $U_t=R_{t+1}+\gamma\max_{a'}\hat{Q}(S_{t+1},a';\mathbf{w})$. (If $S_{t+1}$ is terminal, take the $\gamma$ term as $0$ in either case.) The two methods differ only in that backup $U_t$.
+
+Those displays state the intended change in $\hat{Q}$ at the visited pair. There is no separate table entry to write into: $\hat{Q}$ is determined by $\mathbf{w}$, so the update is realized by changing $\mathbf{w}$. The squared gap to close is the one-step objective
+
+```math
+J_t(\mathbf{w})=\frac{1}{2}\bigl(U_t-\hat{Q}(S_t,A_t;\mathbf{w})\bigr)^2=\frac{1}{2}\bigl(U_t-\mathbf{w}^\top\mathbf{x}_t\bigr)^2.
+```
+
+Because $U_t$ bootstraps $\hat{Q}(\cdot;\mathbf{w})$, it depends on $\mathbf{w}$. The gradient of $J_t$ is
+
+```math
+\nabla_{\mathbf{w}} J_t(\mathbf{w})=\bigl(U_t-\mathbf{w}^\top\mathbf{x}_t\bigr)\bigl(\nabla_{\mathbf{w}} U_t-\mathbf{x}_t\bigr).
+```
+
+**Full-gradient** descent uses that expression as written. **Semi-gradient** sets $\nabla_{\mathbf{w}} U_t=\mathbf{0}$ when differentiating, then $\mathbf{w}\leftarrow\mathbf{w}+\alpha\bigl(U_t-\mathbf{w}^\top\mathbf{x}_t\bigr)\,\mathbf{x}_t$. How $U_t$ is formed decides on-policy vs off-policy. The next two subsections spell each case out.
+
+### 7.1.1 Q-learning
+
+Q-learning is **off-policy** because the $\max$ backup learns about a greedy continuation while behavior may explore (Chapter 6). Take the off-policy $U_t$ from above,
+
+```math
+U_t=R_{t+1}+\gamma\max_{a'}\hat{Q}(S_{t+1},a';\mathbf{w}).
+```
+
+For the greedy action $a^*=\arg\max_{a'}\hat{Q}(S_{t+1},a';\mathbf{w})$ (break ties arbitrarily), $U_t=R_{t+1}+\gamma\mathbf{w}^\top\mathbf{x}(S_{t+1},a^*)$ when $S_{t+1}$ is nonterminal. Differentiating and using (7.2) gives $\nabla_{\mathbf{w}} U_t=\gamma\mathbf{x}(S_{t+1},a^*)$ (since $R_{t+1}$ does not depend on $\mathbf{w}$). If $S_{t+1}$ is terminal, $U_t=R_{t+1}$ and $\nabla_{\mathbf{w}} U_t=\mathbf{0}$.
+
+Full-gradient descent on $J_t$ is
+
+```math
+\begin{aligned}\mathbf{w}&\leftarrow\mathbf{w}-\alpha\,\nabla_{\mathbf{w}} J_t(\mathbf{w})\\&=\mathbf{w}-\alpha\,\bigl(U_t-\mathbf{w}^\top\mathbf{x}_t\bigr)\bigl(\nabla_{\mathbf{w}} U_t-\mathbf{x}_t\bigr).\end{aligned}
+```
+
+Semi-gradient sets $\nabla_{\mathbf{w}} U_t=\mathbf{0}$ and yields
+
+```math
+\mathbf{w}\leftarrow\mathbf{w}+\alpha\Bigl[R_{t+1}+\gamma\max_{a'}\bigl(\mathbf{w}^\top\mathbf{x}(S_{t+1},a')\bigr)-\mathbf{w}^\top\mathbf{x}_t\Bigr]\mathbf{x}_t.\quad (7.3)
+```
+
+Equivalently, $\mathbf{w}\leftarrow\mathbf{w}+\alpha\bigl[R_{t+1}+\gamma\max_{a'}\hat{Q}(S_{t+1},a';\mathbf{w})-\hat{Q}(S_t,A_t;\mathbf{w})\bigr]\mathbf{x}(S_t,A_t)$. This keeps the $\max$ backup, so it is off-policy.
+
+Semi-gradient ignores the dependence of $U_t$ on $\mathbf{w}$ when differentiating $J_t$. That does not freeze the target across learning: after $\mathbf{w}$ is updated, the next transition builds a new $U_t$ from the new $\hat{Q}$. So the bootstrap still **moves** every step.
+
+> [!NOTE]
+>
+> Input: feature map $\mathbf{x}(s,a)$; step size $\alpha$; discount $\gamma$; exploration (e.g. $\varepsilon$-greedy).
+>
+> Output: $\mathbf{w}$ such that $\hat{Q}(s,a;\mathbf{w})=\mathbf{w}^\top\mathbf{x}(s,a)\approx Q^*(s,a)$; greedy policy $\pi(s)=\arg\max_a\hat{Q}(s,a;\mathbf{w})$.
+>
+> 1.  Initialize $\mathbf{w}$ arbitrarily (e.g. $\mathbf{0}$).
+>
+> 2.  Loop for each episode:
+>
+>     - Initialize $S$.
+>
+>     - For each step of the episode until $S$ is terminal:
+>
+>       - Choose $A$ from $S$ using a policy based on $\hat{Q}(\cdot,\cdot;\mathbf{w})$ (e.g. $\varepsilon$-greedy).
+>
+>       - Take $A$; observe $R$, $S'$.
+>
+>       - $\mathbf{x}\leftarrow\mathbf{x}(S,A)$.
+>
+>       - If $S'$ is terminal:
+>
+>         - $U\leftarrow R$
+>
+>         - $\mathbf{g}_U\leftarrow\mathbf{0}$
+>
+>       - Else:
+>
+>         - $a^*\leftarrow\arg\max_{a'}\mathbf{w}^\top\mathbf{x}(S',a')$
+>
+>         - $U\leftarrow R+\gamma\mathbf{w}^\top\mathbf{x}(S',a^*)$
+>
+>         - $\mathbf{g}_U\leftarrow\gamma\mathbf{x}(S',a^*)$
+>
+>       - $\mathbf{w}\leftarrow\mathbf{w}-\alpha\bigl(U-\mathbf{w}^\top\mathbf{x}\bigr)(\mathbf{g}_U-\mathbf{x})$.
+>
+>       - $S\leftarrow S'$.
+>
+> 3.  Return $\mathbf{w}$ and $\pi(s)=\arg\max_a\hat{Q}(s,a;\mathbf{w})$.
+
+> [!NOTE]
+>
+> Input: feature map $\mathbf{x}(s,a)$; step size $\alpha$; discount $\gamma$; exploration (e.g. $\varepsilon$-greedy).
+>
+> Output: $\mathbf{w}$ such that $\hat{Q}(s,a;\mathbf{w})=\mathbf{w}^\top\mathbf{x}(s,a)\approx Q^*(s,a)$; greedy policy $\pi(s)=\arg\max_a\hat{Q}(s,a;\mathbf{w})$.
+>
+> 1.  Initialize $\mathbf{w}$ arbitrarily (e.g. $\mathbf{0}$).
+>
+> 2.  Loop for each episode:
+>
+>     - Initialize $S$.
+>
+>     - For each step of the episode until $S$ is terminal:
+>
+>       - Choose $A$ from $S$ using a policy based on $\hat{Q}(\cdot,\cdot;\mathbf{w})$ (e.g. $\varepsilon$-greedy).
+>
+>       - Take $A$; observe $R$, $S'$.
+>
+>       - $\mathbf{x}\leftarrow\mathbf{x}(S,A)$.
+>
+>       - If $S'$ is terminal:
+>
+>         - $U\leftarrow R$
+>
+>       - Else:
+>
+>         - $U\leftarrow R+\gamma\max_{a'}\mathbf{w}^\top\mathbf{x}(S',a')$
+>
+>       - $\mathbf{w}\leftarrow\mathbf{w}+\alpha\bigl(U-\mathbf{w}^\top\mathbf{x}\bigr)\,\mathbf{x}$.
+>
+>       - $S\leftarrow S'$.
+>
+> 3.  Return $\mathbf{w}$ and $\pi(s)=\arg\max_a\hat{Q}(s,a;\mathbf{w})$.
+
+### 7.1.2 SARSA
+
+SARSA is **on-policy** because the backup uses the next action $A_{t+1}$ from the same behavior that chose $A_t$ (Chapter 6). Take the on-policy $U_t$ from above,
+
+```math
+U_t=R_{t+1}+\gamma\hat{Q}(S_{t+1},A_{t+1};\mathbf{w})=R_{t+1}+\gamma\mathbf{w}^\top\mathbf{x}(S_{t+1},A_{t+1})
+```
+
+(with the $\gamma$ term $0$ if $S_{t+1}$ is terminal). The loss is again $J_t(\mathbf{w})=\tfrac12\bigl(U_t-\mathbf{w}^\top\mathbf{x}_t\bigr)^2$. Full $\nabla_{\mathbf{w}} J_t$ keeps $\nabla_{\mathbf{w}} U_t=\gamma\mathbf{x}(S_{t+1},A_{t+1})$ when $S_{t+1}$ is nonterminal. Semi-gradient sets $\nabla_{\mathbf{w}} U_t=\mathbf{0}$ and yields
+
+```math
+\mathbf{w}\leftarrow\mathbf{w}+\alpha\Bigl[R_{t+1}+\gamma\mathbf{w}^\top\mathbf{x}(S_{t+1},A_{t+1})-\mathbf{w}^\top\mathbf{x}_t\Bigr]\mathbf{x}_t.\quad (7.4)
+```
+
+Equivalently, $\mathbf{w}\leftarrow\mathbf{w}+\alpha\bigl[R_{t+1}+\gamma\hat{Q}(S_{t+1},A_{t+1};\mathbf{w})-\hat{Q}(S_t,A_t;\mathbf{w})\bigr]\mathbf{x}(S_t,A_t)$. Data and backup follow the same policy, so (7.4) is on-policy. As in the off-policy case, $U_t$ still **moves** every step after $\mathbf{w}$ updates. Section 7.2 discusses why (7.3) can diverge (deadly triad) while (7.4) is stable under standard conditions.
+
+> [!NOTE]
+>
+> Input: feature map $\mathbf{x}(s,a)$; step size $\alpha$; discount $\gamma$; exploration (e.g. $\varepsilon$-greedy).
+>
+> Output: $\mathbf{w}$ such that $\hat{Q}(s,a;\mathbf{w})=\mathbf{w}^\top\mathbf{x}(s,a)\approx Q^\pi(s,a)$ for the behavior $\pi$; greedy readout $\pi'(s)=\arg\max_a\hat{Q}(s,a;\mathbf{w})$ optional.
+>
+> 1.  Initialize $\mathbf{w}$ arbitrarily (e.g. $\mathbf{0}$).
+>
+> 2.  Loop for each episode:
+>
+>     - Initialize $S$; choose $A$ from $S$ using a policy based on $\hat{Q}$ (e.g. $\varepsilon$-greedy).
+>
+>     - For each step of the episode until $S$ is terminal:
+>
+>       - Take $A$; observe $R$, $S'$.
+>
+>       - $\mathbf{x}\leftarrow\mathbf{x}(S,A)$.
+>
+>       - If $S'$ is terminal:
+>
+>         - $U\leftarrow R$
+>
+>         - $A'\leftarrow$ undefined (unused)
+>
+>       - Else:
+>
+>         - Choose $A'$ from $S'$ using the same behavior policy.
+>
+>         - $U\leftarrow R+\gamma\mathbf{w}^\top\mathbf{x}(S',A')$
+>
+>       - $\mathbf{w}\leftarrow\mathbf{w}+\alpha\bigl(U-\mathbf{w}^\top\mathbf{x}\bigr)\,\mathbf{x}$.
+>
+>       - $S\leftarrow S'$; $A\leftarrow A'$ (if $S'$ nonterminal).
+>
+> 3.  Return $\mathbf{w}$ (and optional greedy readout of $\hat{Q}$).
+
+The updates above are **stochastic**. Each step uses one transition to form $U_t$ and the (full or semi) gradient of $J_t$, so no expectation appears inside the loss. A different objective is the squared **mean** residual $\tfrac12\bigl(\mathbb{E}[U\mid s,a]-\hat{Q}(s,a;\mathbf{w})\bigr)^2$ at a fixed pair. Its gradient is a product of two expectations and needs two independent draws of $(R,S')$—**double sampling**. That is not $\nabla_{\mathbf{w}} J_t$; online trajectories usually provide only one next state, so the algorithms use the stochastic $J_t$ updates.
+
+```python
+import random
+import numpy as np
+
+STATES = ["A", "B", "C", "D", "E", "F", "G", "H"]
+TERMINALS = {"I", "J"}
+ACTIONS = list(range(4))
+D = 8  # arbitrary feature dimension
+X = {(s, a): np.random.randn(D) for s in STATES for a in ACTIONS}
+
+def step(s, a):
+    """Same toy dynamics as tabular Q-learning."""
+    s_next = random.choice(STATES + list(TERMINALS))
+    r = 1.0 if s_next in TERMINALS else 0.0
+    return s_next, r
+
+def x_sa(s, a):
+    return X[(s, a)]
+
+def q_hat(w, s, a):
+    return float(np.dot(w, x_sa(s, a)))
+
+def eps_greedy(w, s, eps):
+    if random.random() < eps:
+        return random.choice(ACTIONS)
+    return max(ACTIONS, key=lambda a: q_hat(w, s, a))
+
+def greedy_pi(w):
+    """pi(s) = argmax_a Q(s,a;w) (algorithm output)."""
+    return {s: max(ACTIONS, key=lambda a: q_hat(w, s, a)) for s in STATES}
+
+def full_gradient_q(eps=0.1, alpha=0.1, gamma=0.99, max_episodes=500):
+    # 1. Initialize w arbitrarily
+    w = np.zeros(D)
+    n_ep = 0
+    while True:  # 2. Loop for each episode
+        s = "A"  # Initialize S
+        while s not in TERMINALS:
+            a = eps_greedy(w, s, eps)
+            s_next, r = step(s, a)
+            x = x_sa(s, a)
+            if s_next in TERMINALS:
+                U = r
+                g_U = np.zeros(D)
+            else:
+                a_star = max(ACTIONS, key=lambda ap: q_hat(w, s_next, ap))
+                U = r + gamma * q_hat(w, s_next, a_star)
+                g_U = gamma * x_sa(s_next, a_star)
+            w = w - alpha * (U - np.dot(w, x)) * (g_U - x)
+            s = s_next
+        n_ep += 1
+        if n_ep >= max_episodes:
+            break
+    return w, greedy_pi(w)  # 3. Return w and pi
+
+def semi_gradient_q(eps=0.1, alpha=0.1, gamma=0.99, max_episodes=500):
+    # 1. Initialize w arbitrarily
+    w = np.zeros(D)
+    n_ep = 0
+    while True:  # 2. Loop for each episode
+        s = "A"  # Initialize S
+        while s not in TERMINALS:
+            a = eps_greedy(w, s, eps)
+            s_next, r = step(s, a)
+            x = x_sa(s, a)
+            if s_next in TERMINALS:
+                U = r
+            else:
+                U = r + gamma * max(q_hat(w, s_next, ap) for ap in ACTIONS)
+            w = w + alpha * (U - np.dot(w, x)) * x
+            s = s_next
+        n_ep += 1
+        if n_ep >= max_episodes:
+            break
+    return w, greedy_pi(w)  # 3. Return w and pi
+
+def semi_gradient_sarsa(eps=0.1, alpha=0.1, gamma=0.99, max_episodes=500):
+    # 1. Initialize w arbitrarily
+    w = np.zeros(D)
+    n_ep = 0
+    while True:  # 2. Loop for each episode
+        s = "A"
+        a = eps_greedy(w, s, eps)
+        while s not in TERMINALS:
+            s_next, r = step(s, a)
+            x = x_sa(s, a)
+            if s_next in TERMINALS:
+                U = r
+                a_next = None
+            else:
+                a_next = eps_greedy(w, s_next, eps)
+                U = r + gamma * q_hat(w, s_next, a_next)
+            w = w + alpha * (U - np.dot(w, x)) * x
+            s = s_next
+            if a_next is not None:
+                a = a_next
+        n_ep += 1
+        if n_ep >= max_episodes:
+            break
+    return w, greedy_pi(w)  # 3. Return w and optional greedy readout
+
+if __name__ == "__main__":
+    w_full, pi_full = full_gradient_q(eps=0.1, alpha=0.1, gamma=0.9)
+    w_semi, pi_semi = semi_gradient_q(eps=0.1, alpha=0.1, gamma=0.9)
+    w_sarsa, pi_sarsa = semi_gradient_sarsa(eps=0.1, alpha=0.1, gamma=0.9)
+    print("full-gradient Q pi:", pi_full)
+    print("semi-gradient Q pi:", pi_semi)
+    print("semi-gradient SARSA pi:", pi_sarsa)
+```
+
+## 7.2 The Deadly Triad
+
+The semi-gradient updates (7.3) and (7.4) share the same skeleton $\mathbf{w}\leftarrow\mathbf{w}+\alpha\,\delta_t\,\mathbf{x}_t$, with $\delta_t=U_t-\mathbf{w}^\top\mathbf{x}_t$ and a **shared** $\mathbf{w}$. Both use function approximation and bootstrapping. They differ in the third ingredient: (7.3) is off-policy; (7.4) is on-policy. That difference is the **deadly triad**.
+
+### 7.2.1 Three ingredients
+
+<div class="minipage" markdown="1">
+
+Instability can arise when these three are combined:
+
+1.  Function approximation (shared $\mathbf{w}$ couples many pairs)
+
+2.  Bootstrapping ($U_t$ depends on the current estimate)
+
+3.  Off-policy learning (data distribution $\neq$ backup’s policy)
+
+</div>
+
+Drop any one and the standard danger goes away. Tabular methods have no shared $\mathbf{w}$. Monte Carlo (no bootstrap) does not feed the estimate back into $U_t$. On-policy methods keep the distribution of updates matched to the policy in the backup.
+
+### 7.2.2 Off-policy divergence
+
+Off-policy semi-gradient FA—Q-learning FA (7.3) is the control example—can send $\|\mathbf{w}\|\to\infty$. The issue is a **mismatch**: behavior generates which pairs are updated, while the backup (e.g. $\max_{a'}$) pretends a different continuation. With a shared $\mathbf{w}$, correcting one pair moves predictions at others; the bootstrap can then amplify errors instead of damping them.
+
+gave a standard example of that failure: an MDP with six states and reward $0$ on every transition, so the true values are all $0$, and a linear approximator that can represent those values. Shared features couple the states. Under direct semi-gradient updates, run equally often on every transition, the weights can still grow without bound. Baird also proposed residual-gradient methods that minimize the squared Bellman residual; this book keeps the semi-gradient updates (7.3)–(7.4) and does not develop those residual algorithms.
+
+To see the shared-weight mechanism explicitly, reduce to two states (prediction form; $R=0$, $\gamma>1/2$). Set $\hat{V}(s_1)=w$ and $\hat{V}(s_2)=2w$, and update only at $s_1$ while the backup uses $s_2$:
+```math
+w\leftarrow w+\alpha\bigl(\gamma\cdot 2w-w\bigr)=\bigl(1+\alpha(2\gamma-1)\bigr)\,w.
+```
+The factor is strictly larger than $1$, so $|w|\to\infty$. The same kind of mismatch sits inside (7.3) whenever exploring behavior disagrees with the greedy backup. One such instance is enough to show that off-policy linear semi-gradient is **not** generally safe.
+
+### 7.2.3 On-policy stability
+
+On-policy SARSA FA (7.4) keeps function approximation and bootstrapping, but **not** off-policy learning: $A_t$ and $A_{t+1}$ come from the same $\pi$, so the pairs that are updated and the pairs that appear in the bootstrap share one distribution.
+
+Under standard conditions (linear features of full rank under $\pi$, bounded rewards, diminishing step sizes), on-policy linear TD and SARSA FA converge to a finite $\mathbf{w}$ (; see also ). The proof of that convergence is beyond the scope of this book. The takeaway here: (7.4) avoids the deadly triad’s third vertex; (7.3) can hit all three.
+
+### 7.2.4 Summary
+
+<div class="center" markdown="1">
+
+| Update | FA | Bootstrap | Off-policy | Deadly triad? |
+|:---|:---|:---|:---|:---|
+| (7.3) Q-learning FA | yes | yes | yes | can diverge |
+| (7.4) SARSA FA | yes | yes | no | stable (linear, standard conditions) |
+
+</div>
+
+Chapter 7 used **linear** FA. Neural networks and other nonlinear approximators are taken up next: they still face the triad when paired with an off-policy bootstrap, and need practical stabilizers.
+
+[← Previous: TD Control: SARSA, Q-Learning, and Exploration](06-td-control.md) | [Table of contents](../main.md#chapters) | [Next: Deep Q-Networks and Double DQN](08-deep-q-networks-dqn-double-dqn.md) →

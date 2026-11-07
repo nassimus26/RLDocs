@@ -1,0 +1,77 @@
+import random
+import torch
+import torch.nn as nn
+from torch.distributions import Categorical
+
+STATES = ["A", "B", "C", "D", "E", "F", "G", "H"]  # non-terminal states
+TERMINALS = {"I", "J"}  # more than one terminal is fine
+ACTIONS = list(range(4))  # action set A = {0,1,2,3}
+
+def step(s, a):
+    """One transition: next state uniform over non-terminals and terminals."""
+    s_next = random.choice(STATES + list(TERMINALS))
+    r = 1.0 if s_next in TERMINALS else 0.0
+    return s_next, r
+
+def x_s(s):
+    """One-hot vector for state s (network input)."""
+    x = torch.zeros(len(STATES))
+    x[STATES.index(s)] = 1.0
+    return x
+
+def make_h():
+    """Preference network h(s,*;theta): one logit per action. Its weights are theta."""
+    return nn.Sequential(
+        nn.Linear(len(STATES), 64),
+        nn.ReLU(),
+        nn.Linear(64, len(ACTIONS)),
+    )
+
+def pi_theta(h, s):
+    """Returns pi_theta(*|s) = softmax(h(s,*;theta)), a distribution over actions."""
+    return Categorical(logits=h(x_s(s)))
+
+def act(h, s):
+    """Agent's action: A ? pi_theta(*|s)."""
+    return int(pi_theta(h, s).sample().item())
+
+def generate_episode(h):
+    """Roll out one episode under pi_theta: lists of log pi_theta(A_t|S_t) and R_{t+1}."""
+    logps, rewards = [], []
+    s = "A"  # S_0
+    while s not in TERMINALS:
+        dist = pi_theta(h, s)
+        a = dist.sample()  # A_t ? pi_theta(*|S_t)
+        s_next, r = step(s, int(a.item()))
+        logps.append(dist.log_prob(a))
+        rewards.append(r)
+        s = s_next
+    return logps, rewards
+
+def reinforce(alpha=0.01, gamma=0.99, max_episodes=500):
+    # 1. Initialize theta randomly (weights of h)
+    h = make_h()
+    opt = torch.optim.SGD(h.parameters(), lr=alpha)  # updates theta with step size ?
+    n_ep = 0
+    while True:  # 2. Loop for each episode
+        logps, rewards = generate_episode(h)
+        T = len(rewards)
+
+        # For each t: G_t <- sum_{k=t}^{T-1} gamma^{k-t} R_{k+1}  (rewards[k] is R_{k+1})
+        G = [sum(gamma ** (k - t) * rewards[k] for k in range(t, T)) for t in range(T)]
+
+        # theta <- theta + ? sum_t gamma^t G_t ?_theta log pi_theta(A_t|S_t): one SGD step on L(theta) (9.9)
+        loss = -sum(gamma**t * G[t] * logps[t] for t in range(T))
+        opt.zero_grad()
+    loss.backward()
+        opt.step()
+
+        n_ep += 1
+        if n_ep >= max_episodes:
+            break
+    return h  # 3. Return pi_theta (h holds the trained theta)
+
+if __name__ == "__main__":
+    h = reinforce(alpha=0.01, gamma=0.9)
+    print("pi_theta(*|A):", [round(p, 3) for p in pi_theta(h, "A").probs.tolist()])
+    print("action at A:", act(h, "A"))

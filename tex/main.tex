@@ -1,0 +1,106 @@
+% pdfLaTeX project (compile from this directory with latexmk -pdf).
+\documentclass[11pt,oneside,openany]{book}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{eso-pic}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{fvextra}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{margin=1in}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black}
+\newcommand{\appref}[1]{\hyperref[app:#1]{Appendix #1}}
+\newcommand{\citetxt}[2]{\hyperref[cite:#1]{#2}}
+\graphicspath{{../figures/}}
+\setlist[itemize]{leftmargin=1.4em,itemsep=0.25em,topsep=0.4em}
+\setlist[enumerate]{leftmargin=1.6em,itemsep=0.25em,topsep=0.4em}
+\emergencystretch=3em
+\sloppy
+\fvset{breaklines=true,breakanywhere=true,fontsize=\small,baselinestretch=1.05}
+\lstdefinestyle{pycode}{
+  language=Python,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bfseries\color{blue!70!black},
+  commentstyle=\itshape\color{black!45},
+  stringstyle=\color{teal!60!black},
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=true,
+  keepspaces=true,
+  columns=fullflexible,
+  tabsize=4,
+  frame=single,
+  rulecolor=\color{black!30},
+  framesep=3pt,
+  aboveskip=0.6em,
+  belowskip=0.6em,
+  xleftmargin=0.35em,
+  xrightmargin=0.35em,
+  morekeywords={True,False,None,self,as,with,yield},
+}
+\lstset{style=pycode}
+
+\newtcolorbox{implnote}[1][Note]{
+  breakable,
+  colback=blue!3,colframe=blue!45!black,fonttitle=\bfseries,title={#1},
+  boxrule=0.6pt,left=6pt,right=6pt,top=4pt,bottom=4pt
+}
+\newtcolorbox{asidenote}[1][Aside]{
+  breakable,
+  colback=orange!6,colframe=orange!50!black,fonttitle=\bfseries,title={#1},
+  boxrule=0.6pt,left=6pt,right=6pt,top=4pt,bottom=4pt
+}
+
+\title{Reinforcement Learning:\\Mathematics and algorithms from MDPs to RLHF, InstructGPT, and DeepSeek-R1, with Python}
+\author{Dipesh Gautam}
+\date{}
+
+\begin{document}
+\frontmatter
+\thispagestyle{empty}
+\AddToShipoutPictureBG*{%
+  \AtPageLowerLeft{%
+    \includegraphics[width=\paperwidth,height=\paperheight]{book_cover.png}}}%
+\null
+\clearpage
+\maketitle
+\chapter*{Disclaimer}
+This book derives standard reinforcement learning methods and writes Python for the same updates. The algorithms, theorems, and named systems are due to the works listed in the References. It does not introduce a new algorithm. Chapters 11 and 12 describe the shape of InstructGPT-style and DeepSeek-R1-style training; they do not train those published systems, and they do not use their models, data, or infrastructure.
+
+\textbf{Generative artificial intelligence tools were utilized to refine the prose explanations of these standard methods and optimize their linguistic flow. The final text, overarching structure, and conceptual curation were executed by the author. All mathematical derivations, algorithmic loops, and Python source code listings have been manually cross-verified against primary literature by the author, who assumes sole responsibility for the technical correctness, accuracy, and integrity of the final work.}
+\tableofcontents
+\input{chapters/00-preface}
+\mainmatter
+\input{chapters/01-the-rl-problem}
+\input{chapters/02-value-functions-the-bellman-equations}
+\input{chapters/03-dynamic-programming}
+\input{chapters/04-monte-carlo-methods}
+\input{chapters/05-temporal-difference-learning}
+\input{chapters/06-td-control}
+\input{chapters/07-function-approximation-the-deadly-triad}
+\input{chapters/08-deep-q-networks-dqn-double-dqn}
+\input{chapters/09-policy-gradients-reinforce}
+\input{chapters/10-actor-critic-methods}
+\input{chapters/11-reinforcement-learning-from-human-feedback}
+\input{chapters/12-instructgpt-and-deepseek-r1-style-training}
+\input{chapters/13-summary}
+\input{chapters/14-exercises-fully-code-solutions}
+
+\appendix
+\input{appendix}
+\backmatter
+\input{references}
+\end{document}

@@ -1,0 +1,2508 @@
+\chapter{Statistical Concepts}\label{app:A}
+
+The following tools are used in the Bellman derivations that follow, in the Robbins--Monro argument of \appref{D}, and later in off-policy Monte Carlo. Probability relations first, then expectation, then variance, then the law of large numbers, then Monte Carlo estimation, then importance sampling, then the Markov property.
+
+\section{Probability}
+
+\subsection{Law of total probability (LOTP)}
+
+If $B_1,\ldots,B_n$ are mutually exclusive and exhaustive,
+
+\begin{equation}
+P(A)
+=
+\sum_i P(A\mid B_i)\, P(B_i)
+=
+\sum_i P(A, B_i).
+\tag{A.1}
+\end{equation}
+
+\section{Expectation}
+
+\subsection{Definition}
+
+For a discrete random variable $X$,
+
+\begin{equation}
+\mathbb{E}[X]
+=
+\sum_x x\, P(X=x).
+\tag{A.2}
+\end{equation}
+
+\subsection{Conditional expectation}
+
+Conditioning on $Y=y$ (or on an event),
+
+\begin{equation}
+\mathbb{E}[X\mid Y=y]
+=
+\sum_x x\, P(X=x\mid Y=y).
+\tag{A.3}
+\end{equation}
+
+\subsection{Linearity of (conditional) expectation}
+
+For random variables $Y_1,\ldots,Y_n$ and constants $a_1,\ldots,a_n$,
+
+\begin{equation}
+\mathbb{E}[a_1 Y_1+\cdots+a_n Y_n]
+=
+a_1\mathbb{E}[Y_1]+\cdots+a_n\mathbb{E}[Y_n],
+\tag{A.4}
+\end{equation}
+
+and conditioning on a random variable $X$ (or on an event):
+
+\begin{equation}
+\mathbb{E}[a_1 Y_1+\cdots+a_n Y_n\mid X]
+=
+a_1\mathbb{E}[Y_1\mid X]+\cdots+a_n\mathbb{E}[Y_n\mid X].
+\tag{A.5}
+\end{equation}
+
+\textbf{Worked expansion.} For discrete $X_1,X_2$, constants $a,b$, and $Y=y$:
+
+\[
+\begin{aligned}
+\mathbb{E}[a X_1+b X_2\mid Y=y]
+&=
+a\,\mathbb{E}[X_1\mid Y=y]
++
+b\,\mathbb{E}[X_2\mid Y=y]
+\quad\text{[A.5; linearity]}
+\\
+&=
+a\sum_{x_1} x_1\, P(X_1=x_1\mid Y=y)
++
+b\sum_{x_2} x_2\, P(X_2=x_2\mid Y=y)
+\quad\text{[A.3; conditional expectation]}
+\\
+&=
+a\sum_{x_1} x_1
+\sum_{x_2} P(X_1=x_1,X_2=x_2\mid Y=y)
++
+b\sum_{x_2} x_2
+\sum_{x_1} P(X_1=x_1,X_2=x_2\mid Y=y)
+\quad\text{[A.1; LOTP]}
+\end{aligned}
+\]
+
+\begin{equation}
+\mathbb{E}[a X_1+b X_2\mid Y=y]
+=
+\sum_{x_1,x_2} (a x_1+b x_2)\, P(X_1=x_1,X_2=x_2\mid Y=y).
+\tag{A.6}
+\end{equation}
+
+(In this book one often takes $a=1$, $b=\gamma$, with $X_1,X_2$ a reward and a return.)
+
+\subsection{Expanding a conditional expectation over a partition}
+
+Start from the definition, then apply LOTP to the conditional probability over the values of a discrete random variable $Y$:
+
+\[
+\begin{aligned}
+\mathbb{E}[X\mid A]
+&=
+\sum_x x\, P(X=x\mid A)
+\quad\text{[A.3; conditional expectation]}
+\\
+&=
+\sum_x x
+\sum_y P(X=x\mid A,Y=y)\, P(Y=y\mid A)
+\quad\text{[A.1; LOTP]}
+\\
+&=
+\sum_y
+\Bigl(
+\sum_x x\, P(X=x\mid A,Y=y)
+\Bigr)
+P(Y=y\mid A)
+\end{aligned}
+\]
+
+\begin{equation}
+\mathbb{E}[X\mid A]
+=
+\sum_y \mathbb{E}[X\mid A,Y=y]\, P(Y=y\mid A).
+\tag{A.7}
+\end{equation}
+
+\subsection{Law of total expectation (tower property)}
+
+Start from the definition of $\mathbb{E}[X]$, expand $P(X=x)$ by LOTP over the values of a discrete $Y$, then regroup:
+
+\[
+\begin{aligned}
+\mathbb{E}[X]
+&=
+\sum_x x\, P(X=x)
+\quad\text{[A.2]}
+\\
+&=
+\sum_x x
+\sum_y P(X=x\mid Y=y)\, P(Y=y)
+\quad\text{[A.1; LOTP]}
+\\
+&=
+\sum_y
+\Bigl(
+\sum_x x\, P(X=x\mid Y=y)
+\Bigr)
+P(Y=y)
+\\
+&=
+\sum_y \mathbb{E}[X\mid Y=y]\, P(Y=y)
+\quad\text{[A.3]}
+\\
+&=
+\mathbb{E}\bigl[\mathbb{E}[X\mid Y]\bigr].
+\end{aligned}
+\]
+
+So
+
+\begin{equation}
+\mathbb{E}[X]
+=
+\mathbb{E}\bigl[\mathbb{E}[X\mid Y]\bigr].
+\tag{A.8}
+\end{equation}
+
+The same argument with the event $\{Z=z\}$ in place of the unconditional law gives the conditional tower. Apply (A.7) with $A=\{Z=z\}$ and partition by $Y$:
+
+\[
+\begin{aligned}
+\mathbb{E}[X\mid Z=z]
+&=
+\sum_y \mathbb{E}[X\mid Z=z,Y=y]\, P(Y=y\mid Z=z)
+\quad\text{[A.7]}
+\\
+&=
+\sum_y \mathbb{E}[X\mid Y=y,Z=z]\, P(Y=y\mid Z=z).
+\end{aligned}
+\]
+
+For each fixed pair $(y,z)$, the number $\mathbb{E}[X\mid Y=y,Z=z]$ depends only on those values. Collecting them into a random variable that is a \textbf{function of $(Y,Z)$},
+
+\[
+g(Y,Z)
+:=
+\mathbb{E}[X\mid Y,Z],
+\]
+
+the sum above is the conditional expectation of that function given $Z=z$:
+
+\[
+\begin{aligned}
+\mathbb{E}[X\mid Z=z]
+&=
+\sum_y g(y,z)\, P(Y=y\mid Z=z)
+\\
+&=
+\mathbb{E}\bigl[g(Y,Z)\bigm|\ Z=z\bigr]
+\\
+&=
+\mathbb{E}\bigl[\mathbb{E}[X\mid Y,Z]\bigm|\ Z=z\bigr].
+\end{aligned}
+\]
+
+Writing the same identity for every $z$ as a random-variable equation:
+
+\begin{equation}
+\mathbb{E}[X\mid Z]
+=
+\mathbb{E}\bigl[\mathbb{E}[X\mid Y,Z]\bigm|\ Z\bigr].
+\tag{A.9}
+\end{equation}
+
+In discrete form with $Y$ taking values $y$ (the expansion used above):
+
+\begin{equation}
+\mathbb{E}[X\mid Z=z]
+=
+\sum_y \mathbb{E}[X\mid Y=y,Z=z]\, P(Y=y\mid Z=z).
+\tag{A.10}
+\end{equation}
+
+So (A.10) is (A.9) written pointwise at $Z=z$; (A.8) is the special case of (A.9) with no conditioning on $Z$ (or with $Z$ trivial).
+
+\subsection{Expectation of a function of a discrete random variable (Law of the Unconscious Statistician)}
+
+The identity $\mathbb{E}[f(X)]=\sum_x f(x)\,P(X=x)$ is also called the \textbf{law of the unconscious statistician (LOTUS)}, or sometimes the \textbf{law of the lazy statistician}: one need not first find the distribution of $Y=f(X)$; the expectation follows from the distribution of $X$ alone.
+
+Let $X$ be discrete and set $Y=f(X)$. Then $P(Y=y)$ is the sum of all probabilities of those $x$ for which $f(x)=y$:
+
+\[
+P(Y=y)
+=
+\sum_{x:\,f(x)=y} P(X=x).
+\quad\text{[A.1; LOTP]}
+\]
+
+Then
+
+\begin{equation}
+\begin{aligned}
+\mathbb{E}[f(X)]
+&=
+\mathbb{E}[Y]
+=
+\sum_y y\, P(Y=y)
+\\
+&=
+\sum_y y
+\left(
+\sum_{x:\,f(x)=y} P(X=x)
+\right)
+\\
+&=
+\sum_y
+\left(
+\sum_{x:\,f(x)=y} y\, P(X=x)
+\right)
+\\
+&=
+\sum_y
+\left(
+\sum_{x:\,f(x)=y} f(x)\, P(X=x)
+\right)
+\quad\text{[$y=f(x)$ on each inner sum]}
+\\
+&=
+\sum_x f(x)\, P(X=x).
+\end{aligned}
+\tag{A.12}
+\end{equation}
+
+The last equality collapses the nested sums. For each fixed $y$, the inner sum runs only over the group $\{x:f(x)=y\}$: any $x$ with $f(x)\neq y$ is missing from that group. Because $f$ is a function, every $x$ maps to exactly one $y$, so each $x$ appears in \textbf{exactly one} group, and every $x$ appears in \textbf{some} group. Summing $f(x)\,P(X=x)$ group by group is therefore the same as summing once over all $x$.
+
+\textbf{Example.} Suppose the possible values of $X$ are $\{1,2,3\}$ and $f(1)=f(2)=a$, $f(3)=b$. The double sum is two groups:
+
+\[
+\sum_{x:\,f(x)=a} f(x)\,P(X=x)
++
+\sum_{x:\,f(x)=b} f(x)\,P(X=x)
+=
+\bigl(f(1)P(X=1)+f(2)P(X=2)\bigr)
++
+f(3)P(X=3),
+\]
+
+which is exactly $\sum_{x\in\{1,2,3\}} f(x)\,P(X=x)$. In the $a$-group, $x=3$ is missing; in the $b$-group, $x=1$ and $x=2$ are missing; no $x$ appears in both.
+
+(The same steps with $P(\,\cdot\mid A)$ give $\mathbb{E}[f(X)\mid A]=\sum_x f(x)\,P(X=x\mid A)$.)
+
+\subsection{Variance and standard deviation}
+
+Write $\mu=\mathbb{E}[X]$. The \textbf{variance} is the expected squared deviation from that mean,
+
+\begin{equation}
+\mathrm{Var}(X)
+=
+\mathbb{E}\bigl[(X-\mu)^2\bigr].
+\tag{A.17}\label{eq:A.17}
+\end{equation}
+
+The \textbf{standard deviation} is the positive square root,
+
+\begin{equation}
+\sigma_X
+=
+\sqrt{\mathrm{Var}(X)}.
+\tag{A.18}\label{eq:A.18}
+\end{equation}
+
+So $\mathrm{Var}(X)=\sigma_X^2$. Expanding the square in (A.17) and using linearity (A.5) with $\mathbb{E}[X]=\mu$ gives the computational form
+
+\begin{equation}
+\mathrm{Var}(X)
+=
+\mathbb{E}[X^2]-(\mathbb{E}[X])^2.
+\tag{A.19}\label{eq:A.19}
+\end{equation}
+
+If $\mathbb{E}[X]=0$, then (A.19) is $\mathrm{Var}(X)=\mathbb{E}[X^2]$. For a finite list $x_1,\ldots,x_n$ with list mean $\bar x$, the same square-root of mean squared deviation from $\bar x$ is written $\mathrm{std}$.
+
+\section{Law of large numbers}\label{app:A.3}
+
+The \textbf{weak law of large numbers} says: if $x_1,\ldots,x_n$ are i.i.d.\ samples from the distribution of a random variable $X$ with expectation $\mu=\mathbb{E}[X]$ and finite variance $\mathrm{Var}(X)=\sigma_X^2$, as in (A.17)--(A.18), then the sample mean of those draws has expectation $\mu$ and converges to $\mu$. Write the sample mean as
+\begin{equation}
+\bar{x}_n
+=
+\frac{1}{n}\sum_{i=1}^{n} x_i.
+\tag{A.20}\label{eq:A.20}
+\end{equation}
+Then $\mathbb{E}[\bar{x}_n]=\mu$, and $\bar{x}_n\to\mu$ in probability as $n\to\infty$.
+
+\textbf{Proof.}
+
+Linearity (A.4) gives
+\begin{equation}
+\mathbb{E}[\bar{x}_n]
+=
+\frac{1}{n}\sum_{i=1}^{n} \mathbb{E}[x_i]
+=
+\mu.
+\tag{A.21}\label{eq:A.21}
+\end{equation}
+So $\bar{x}_n$ is unbiased for $\mu$.
+
+For a constant $a$, (A.17) gives $\mathrm{Var}(aX)=a^2\mathrm{Var}(X)$. For independent $X$ and $Y$,
+\[
+\begin{aligned}
+\mathrm{Var}(X+Y)
+&=
+\mathbb{E}\bigl[((X-\mu_X)+(Y-\mu_Y))^2\bigr]
+\\
+&=
+\mathrm{Var}(X)+\mathrm{Var}(Y)+2\,\mathbb{E}[(X-\mu_X)(Y-\mu_Y)].
+\end{aligned}
+\]
+Independence factors the cross term:
+\[
+\mathbb{E}[(X-\mu_X)(Y-\mu_Y)]
+=
+\mathbb{E}[X-\mu_X]\,\mathbb{E}[Y-\mu_Y].
+\]
+Each factor is the expectation of a deviation from the mean, so
+\[
+\mathbb{E}[X-\mu_X]
+=
+\mathbb{E}[X]-\mu_X
+=
+\mu_X-\mu_X
+=
+0,
+\]
+and likewise $\mathbb{E}[Y-\mu_Y]=\mathbb{E}[Y]-\mu_Y=\mu_Y-\mu_Y=0$. The product is therefore $0$, and
+\[
+\mathrm{Var}(X+Y)=\mathrm{Var}(X)+\mathrm{Var}(Y).
+\]
+Repeating for $n$ i.i.d.\ samples,
+\begin{equation}
+\mathrm{Var}(\bar{x}_n)
+=
+\mathrm{Var}\!\left(\frac{1}{n}\sum_{i=1}^{n} x_i\right)
+=
+\frac{1}{n^2}\sum_{i=1}^{n} \mathrm{Var}(x_i)
+=
+\frac{\sigma_X^2}{n}.
+\tag{A.22}\label{eq:A.22}
+\end{equation}
+The standard deviation of $\bar{x}_n$ is $\sigma_X/\sqrt{n}$. As $n\to\infty$, that variance goes to $0$. Chebyshev's inequality bounds how far a random variable can sit from its mean: for a random variable $Y$ with mean $\nu$ and finite variance, and every $\varepsilon>0$,
+\[
+P\bigl(|Y-\nu|\ge\varepsilon\bigr)
+\le
+\frac{\mathrm{Var}(Y)}{\varepsilon^2}.
+\]
+Taking $Y=\bar{x}_n$ and $\nu=\mu$ with (A.22) gives
+\begin{equation}
+P\bigl(|\bar{x}_n-\mu|\ge\varepsilon\bigr)
+\le
+\frac{\mathrm{Var}(\bar{x}_n)}{\varepsilon^2}
+=
+\frac{\sigma_X^2}{n\varepsilon^2}
+\to 0.
+\tag{A.23}\label{eq:A.23}
+\end{equation}
+So $\bar{x}_n\to\mu$ in probability, which is the claim at the start of this section. The same Chebyshev bound is used in \appref{D}.
+
+\section{Monte Carlo estimation}\label{app:A.4}
+
+\textbf{Monte Carlo} estimates an expectation $\mathbb{E}[f(X)]$ by drawing i.i.d.\ samples $x_1,\ldots,x_n$ from the distribution of $X$ and averaging the observed values of $f$. The estimator is
+\begin{equation}
+\bar{f}_n
+=
+\frac{1}{n}\sum_{i=1}^{n} f(x_i).
+\tag{A.24}\label{eq:A.24}
+\end{equation}
+If $\mathrm{Var}(f(X))$ is finite, then $\mathbb{E}[\bar{f}_n]=\mathbb{E}[f(X)]$, and $\bar{f}_n\to\mathbb{E}[f(X)]$ in probability as $n\to\infty$. Chapter 4 uses it with $f$ the return $G_t$ from a visit to $s$.
+
+\textbf{Proof.}
+Replace each $x_i$ in (A.20) by $f(x_i)$, which is legitimate by (A.12). Then (A.21)--(A.23) apply with $X$ replaced by $f(X)$, so $\bar{f}_n$ is unbiased for $\mathbb{E}[f(X)]$ and converges to it.
+
+\section{Importance sampling}
+
+Importance sampling estimates an expectation under a target $p$ from samples drawn under a proposal $q$, by reweighting each sample with $w=p/q$. Example: estimate mean height in the population ($p$) from players at a basketball camp ($q$); tall players are common at camp but rare in the population, so $w$ downweights them.
+
+Expectation is still (A.2): $\mathbb{E}[Y]=\sum_y y\,P(Y=y)$. When $Y=f(X)$ and $X$ has distribution $p$, (A.12) writes that as a sum over $x$: \[
+\mathbb{E}_{x\sim p}[f(x)]
+=
+\sum_x f(x)\, p(x)
+\]
+
+(for discrete $x$; continuous cases replace the sum by an integral). If we could draw $x_1,\ldots,x_N$ from $p$, the Monte Carlo average (A.24) of the values $f(x_i)$ would estimate that expectation.
+
+Often we \textbf{cannot} (or do not) sample from $p$. Instead we have samples from a different distribution $q$ (the \textbf{proposal} or \textbf{behavior} distribution), with $q(x)>0$ whenever $p(x)>0$ and $f(x)\neq 0$. A plain average under $q$ estimates $\mathbb{E}_{x\sim q}[f(x)]$, which is the wrong target. Importance sampling rewrites the $p$-expectation as a $q$-expectation by inserting the ratio $p/q$: \begin{equation}
+\begin{aligned}
+\mathbb{E}_{x\sim p}[f(x)]
+&=
+\sum_x f(x)\, p(x)
+\\
+&=
+\sum_x f(x)\, \frac{p(x)}{q(x)}\, q(x)
+\\
+&=
+\sum_x w(x)\, f(x)\, q(x)
+\\
+&=
+\mathbb{E}_{x\sim q}\bigl[w(x)\, f(x)\bigr],
+\qquad
+w(x)=\frac{p(x)}{q(x)}.
+\end{aligned}
+\tag{A.13}\label{eq:A.13}
+\end{equation}
+
+The weight has mean one under $q$:
+
+\[
+\begin{aligned}
+\mathbb{E}_{x\sim q}[w(x)]
+&=
+\sum_x w(x)\, q(x)
+\\
+&=
+\sum_x \frac{p(x)}{q(x)}\, q(x)
+\\
+&=
+\sum_x p(x)
+\\
+&=
+1.
+\end{aligned}
+\]
+
+Dividing the right-hand side of (A.13) by this identity,
+
+\begin{equation}
+\begin{aligned}
+\mathbb{E}_{x\sim p}[f(x)]
+&=
+\mathbb{E}_{x\sim q}\bigl[w(x)\, f(x)\bigr]
+\\
+&=
+\frac{\mathbb{E}_{x\sim q}\bigl[w(x)\, f(x)\bigr]}{\mathbb{E}_{x\sim q}[w(x)]}.
+\end{aligned}
+\tag{A.14}
+\end{equation}
+
+With i.i.d. samples $x_i\sim q$, estimate the expectations by sample means. Estimating only the numerator of (A.14) (equivalently, the last line of (A.13)) gives \textbf{ordinary} importance sampling:
+
+\begin{equation}
+\mathbb{E}_{x\sim p}[f(x)]
+\approx
+\frac{1}{N}\sum_{i=1}^{N} w(x_i)\, f(x_i).
+\tag{A.15}
+\end{equation}
+
+Estimating both the numerator and the denominator of (A.14) gives \textbf{weighted} (self-normalized) importance sampling:
+
+\begin{equation}
+\mathbb{E}_{x\sim p}[f(x)]
+\approx
+\frac{\tfrac{1}{N}\sum_{i=1}^{N} w(x_i)\, f(x_i)}
+{\tfrac{1}{N}\sum_{i=1}^{N} w(x_i)}
+=
+\frac{\sum_{i=1}^{N} w(x_i)\, f(x_i)}{\sum_{i=1}^{N} w(x_i)}.
+\tag{A.16}
+\end{equation}
+
+A single term $w(x)\,f(x)$ is already an \textbf{unbiased} estimator of $\mathbb{E}_p[f]$, since its mean equals $\mathbb{E}_p[f]$ by (A.13). Ordinary importance sampling (A.15) averages $N$ such terms, so it is unbiased for $\mathbb{E}_p[f]$ as well. Weighted importance sampling (A.16) estimates the same target but is \textbf{biased} for finite $N$. It divides two random averages built from the same samples, and the mean of a ratio need not equal the ratio of the means. That bias goes away as $N$ grows. The cost of ordinary IS shows up in variance. If a few samples carry large weights and many carry small ones, (A.15) is driven by those few terms and can jump a lot from one run to the next. Weighted (A.16) is usually stabler. A large $w$ increases both the numerator and the denominator, so no single sample can take more than its share of the total weight.
+
+If $q$ oversamples a region relative to $p$, then $w<1$ there (downweight); if $q$ undersamples it, then $w>1$ (upweight). Importance sampling \textbf{reweights} every draw. Rejection sampling instead \textbf{accepts or drops}; that procedure, and the hard-filter case, is \appref{H}.
+
+\section{Markov property}
+
+Given $S_{t+1}=s'$, the remaining return $G_{t+1}$ does not depend on $(S_t,A_t)$:
+
+\begin{equation}
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a,S_{t+1}=s']
+=
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1}=s'].
+\tag{A.11}
+\end{equation}
+
+\chapter{Bellman Expectation Derivation}\label{app:B}
+
+\section*{Goal}
+
+Derive the Bellman expectation equations for a fixed policy $\pi$, and also the policy-averaged form of $V^\pi$ used in matrix policy evaluation.
+
+\begin{equation}
+V^\pi(s)
+=
+\sum_{a}
+\pi(a \mid s)
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^\pi(s')
+\right].
+\tag{B.1}\label{eq:B.1}
+\end{equation}
+
+\begin{equation}
+Q^\pi(s,a)
+=
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma \sum_{a'} \pi(a' \mid s') Q^\pi(s',a')
+\right].
+\tag{B.2}\label{eq:B.2}
+\end{equation}
+
+\begin{equation}
+V^\pi(s)
+=
+R^\pi(s)
++
+\gamma
+\sum_{s'}
+P^\pi(s' \mid s)\, V^\pi(s').
+\tag{B.3}\label{eq:B.3}
+\end{equation}
+
+B.3 derives (B.1) and (B.3), with compact form (B.11). B.4 derives (B.2), with compact form (B.18). B.5 collects the expectation links between $V^\pi$ and $Q^\pi$ used in later chapters. Expected rewards $R(s,a,s')$, $R(s,a)$, and $R^\pi(s)$ are (B.4), (B.5), and (B.12).
+
+\section{Expected rewards}
+
+\[
+R(s,a,s')=\mathbb{E}[R_{t+1}\mid S_t=s,A_t=a,S_{t+1}=s'];
+\quad\text{expected reward from taking $a$ in $s$ and arriving at $s'$}.
+\]
+
+\[
+\begin{aligned}
+R(s,a,s')
+&=
+\sum_r r\, P(R_{t+1}=r\mid S_t=s,A_t=a,S_{t+1}=s')
+\quad\text{[A.3; conditional expectation]}
+\\
+&=
+\sum_r r\, \frac{P(s',r\mid s,a)}{P(s'\mid s,a)}
+\quad\text{[conditional probability]}.
+\end{aligned}
+\]
+
+\begin{equation}
+R(s,a,s')
+=
+\sum_r r\, \frac{P(s',r\mid s,a)}{P(s'\mid s,a)}.
+\tag{B.4}\label{eq:B.4}
+\end{equation}
+
+\[
+R(s,a)=\mathbb{E}[R_{t+1}\mid S_t=s,A_t=a];
+\quad\text{expected reward from taking $a$ in $s$}.
+\]
+
+Expand over the next state by (A.7), then substitute (B.4):
+
+\[
+\begin{aligned}
+R(s,a)
+&=
+\sum_{s'}
+\mathbb{E}[R_{t+1}\mid S_t=s,A_t=a,S_{t+1}=s']
+\,
+P(s'\mid s,a)
+\quad\text{[A.7; partition expansion]}
+\\
+&=
+\sum_{s'}
+R(s,a,s')\, P(s'\mid s,a)
+\\
+&=
+\sum_{s'}
+\Bigl(
+\sum_r r\, \frac{P(s',r\mid s,a)}{P(s'\mid s,a)}
+\Bigr)
+P(s'\mid s,a)
+\quad\text{[(B.4)]}
+\\
+&=
+\sum_{s',r} r\, P(s',r\mid s,a).
+\end{aligned}
+\]
+
+\begin{equation}
+R(s,a)
+=
+\sum_{s',r} r\, P(s',r\mid s,a)
+=
+\sum_{s'} P(s'\mid s,a)\, R(s,a,s').
+\tag{B.5}\label{eq:B.5}
+\end{equation}
+
+\section{Trajectory and environment dynamics}
+
+To model how an agent interacts with its environment over time, consider a sequential trajectory in a Markov Decision Process (MDP):
+
+\[
+S_t \xrightarrow{A_t} (S_{t+1}, R_{t+1}) \xrightarrow{A_{t+1}} (S_{t+2}, R_{t+2}) \xrightarrow{A_{t+2}} \dots
+\]
+
+\begin{enumerate}
+\item \textbf{State $S_t = s$}: The agent starts at time step $t$ in state $s$.
+\item \textbf{Action $A_t = a$}: The probability of selecting action $A_t = a$ in state $S_t = s$ is $P(A_t = a \mid S_t = s)$, also called the policy and written as $\pi(a \mid s)$.
+\item \textbf{Transition \& Reward $(S_{t+1} = s', R_{t+1} = r)$}: Given state $S_t = s$ and action $A_t = a$, the environment transitions to next state $S_{t+1} = s'$ and gives reward $R_{t+1} = r$ with joint probability $P(s', r \mid s, a) = P(S_{t+1} = s', R_{t+1} = r \mid S_t = s, A_t = a)$. \textit{Note: Due to environmental stochasticity, both state transitions and reward outcomes are probabilistic; even when transitioning from state $s$ to the exact same next state $s'$ via action $a$, the immediate reward $R_{t+1}$ can vary according to this distribution.}
+\end{enumerate}
+
+\subsection{Return $G_t$}
+
+The total discounted return $G_t$ from step $t$ is the sum of all future rewards:
+
+\begin{equation}
+G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \dots = R_{t+1} + \gamma G_{t+1}
+\tag{B.6}
+\end{equation}
+
+where $R_{t+1}$ is the immediate reward and $\gamma \in [0, 1]$ is the discount factor.
+
+\section{State-value $V^\pi$}
+
+We want (B.1).
+
+\subsection{Define the state-value function}
+
+\begin{equation}
+V^\pi(s)
+=
+\mathbb{E}_\pi[G_t\mid S_t=s]
+\tag{B.7}
+\end{equation}
+
+\subsection{Substitute the recursive return}
+
+From (B.6), $G_t=R_{t+1}+\gamma G_{t+1}$. Therefore,
+
+\begin{equation}
+\begin{aligned}
+V^\pi(s)
+&=
+\mathbb{E}_\pi[G_t\mid S_t=s] \\
+&=
+\mathbb{E}_\pi[R_{t+1}+\gamma G_{t+1}\mid S_t=s] \\
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s]
++
+\gamma\mathbb{E}_\pi[G_{t+1}\mid S_t=s]
+\end{aligned}
+\tag{B.8}
+\end{equation}
+
+We derive the two terms separately.
+
+\subsection{Immediate Reward}
+
+Expand over $A_t$ by (A.7). Each inner expectation is the definition (A.3), then LOTP (A.1) writes the joint $P(s',r\mid s,a)$:
+
+\[
+\begin{aligned}
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s]
+&=
+\sum_a
+\mathbb{E}[R_{t+1}\mid S_t=s,A_t=a]
+\,
+\pi(a\mid s)
+\quad\text{[A.7; partition expansion]}
+\\
+&=
+\sum_a\pi(a\mid s)
+\sum_r r\,
+P(R_{t+1}=r\mid S_t=s,A_t=a)
+\quad\text{[A.3; conditional expectation]}
+\\
+&=
+\sum_a\pi(a\mid s)
+\sum_{s',r}
+r\, P(s',r\mid s,a)
+\quad\text{[A.1; LOTP]}.
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s]
+=
+\sum_a\pi(a\mid s)
+\sum_{s',r}
+rP(s',r\mid s,a)
+}
+\tag{B.9}
+\end{equation}
+
+\subsection{Future Return}
+
+Expand over $A_t$, then over $S_{t+1}$, by (A.7). Markov (A.11) drops $(s,a)$ given $s'$; the inner expectation is $V^\pi(s')$ by (B.7). A last LOTP writes $P(s'\mid s,a)=\sum_r P(s',r\mid s,a)$:
+
+\[
+\begin{aligned}
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s]
+&=
+\sum_a
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a]
+\,
+\pi(a\mid s)
+\quad\text{[A.7; partition expansion]}
+\\
+&=
+\sum_a\pi(a\mid s)
+\sum_{s'}
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a,S_{t+1}=s']
+\,
+P(s'\mid s,a)
+\quad\text{[A.7; partition expansion]}
+\\
+&=
+\sum_a\pi(a\mid s)
+\sum_{s'}
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1}=s']
+\,
+P(s'\mid s,a)
+\quad\text{[A.11; Markov]}
+\\
+&=
+\sum_a\pi(a\mid s)
+\sum_{s'}
+V^\pi(s')\, P(s'\mid s,a)
+\quad\text{[(B.7)]}
+\\
+&=
+\sum_a\pi(a\mid s)
+\sum_{s',r}
+P(s',r\mid s,a)\, V^\pi(s')
+\quad\text{[A.1; LOTP]}.
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s]
+=
+\sum_a
+\pi(a\mid s)
+\sum_{s',r}
+P(s',r\mid s,a)V^\pi(s')
+}
+\tag{B.10}
+\end{equation}
+
+\subsection{Combine}
+
+Recall (B.8). Substitute (B.9) and (B.10):
+
+\[
+\begin{aligned}
+V^\pi(s)
+&=
+\sum_a\pi(a\mid s)
+\sum_{s',r}
+rP(s',r\mid s,a)
+\\
+&\qquad+
+\gamma
+\sum_a\pi(a\mid s)
+\sum_{s',r}
+P(s',r\mid s,a)V^\pi(s')
+\end{aligned}
+\]
+
+Factor the common terms:
+
+\begin{equation}
+\boxed{
+V^\pi(s)
+=
+\sum_a
+\pi(a\mid s)
+\sum_{s',r}
+P(s',r\mid s,a)
+\left[
+r+\gamma V^\pi(s')
+\right]
+}
+\tag{B.1}
+\end{equation}
+
+This is the \textbf{Bellman Expectation Equation} (B.1).
+
+\subsection{Compact one-step form}
+
+Start from (B.8):
+
+\[
+V^\pi(s)
+=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s]
++
+\gamma
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s].
+\]
+
+For the future term, apply the tower property (A.9) with $X=G_{t+1}$, $Y=S_{t+1}$, and $Z=S_t$. The inner conditional expectation is a function of $(S_{t+1},S_t)$:
+
+\[
+\mathbb{E}_\pi[G_{t+1}\mid S_t]
+=
+\mathbb{E}_\pi\bigl[
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1},S_t]
+\bigm|
+S_t
+\bigr]
+\quad\text{[A.9]}.
+\]
+
+Given $S_{t+1}$, the Markov property (A.11) drops $S_t$, and the inner expectation is $V^\pi(S_{t+1})$ by (B.7):
+
+\[
+\begin{aligned}
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1},S_t]
+&=
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1}]
+\quad\text{[A.11; Markov]}
+\\
+&=
+V^\pi(S_{t+1})
+\quad\text{[(B.7)]}.
+\end{aligned}
+\]
+
+Therefore
+
+\[
+\mathbb{E}_\pi[G_{t+1}\mid S_t]
+=
+\mathbb{E}_\pi\bigl[V^\pi(S_{t+1})\mid S_t\bigr],
+\]
+
+and evaluating at $S_t=s$,
+
+\[
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s]
+=
+\mathbb{E}_\pi\bigl[V^\pi(S_{t+1})\mid S_t=s\bigr].
+\]
+
+Substitute back into (B.8) and apply linearity (A.5):
+
+\[
+\begin{aligned}
+V^\pi(s)
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s]
++
+\gamma
+\mathbb{E}_\pi\bigl[V^\pi(S_{t+1})\mid S_t=s\bigr]
+\\
+&=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma V^\pi(S_{t+1})\mid S_t=s\bigr]
+\quad\text{[A.5; linearity]}.
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+V^\pi(s)
+=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma V^\pi(S_{t+1})\mid S_t=s\bigr].
+}
+\tag{B.11}\label{eq:B.11}
+\end{equation}
+
+\textbf{Alternative derivation (discrete expansion).} The same identity for $\mathbb{E}_\pi[G_{t+1}\mid S_t=s]$ can be written by expanding over next-state values with (A.10), then applying Markov and (B.7):
+
+\[
+\begin{aligned}
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s]
+&=
+\sum_{s'}
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,S_{t+1}=s']
+\,
+P_\pi(S_{t+1}=s'\mid S_t=s)
+\quad\text{[A.10]}
+\\
+&=
+\sum_{s'}
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1}=s']
+\,
+P_\pi(S_{t+1}=s'\mid S_t=s)
+\quad\text{[A.11; Markov]}
+\\
+&=
+\sum_{s'}
+V^\pi(s')
+\,
+P_\pi(S_{t+1}=s'\mid S_t=s)
+\quad\text{[(B.7)]}
+\\
+&=
+\mathbb{E}_\pi\bigl[V^\pi(S_{t+1})\mid S_t=s\bigr].
+\end{aligned}
+\]
+
+Substituting into (B.8) and using linearity (A.5) recovers (B.11) as before.
+
+\subsection{Policy-averaged form}
+
+\textbf{Why ``policy-averaged''.} The one-step quantities $R(s,a)$ and $P(s'\mid s,a)$ still depend on the chosen action. Averaging them with weights $\pi(a\mid s)$ produces state-only objects $R^\pi(s)$ and $P^\pi(s'\mid s)$---the reward and transition \textbf{averaged under the policy}. Equation (B.1) writes those averages out explicitly; the form below absorbs them into $R^\pi$ and $P^\pi$, which is what matrix policy evaluation uses.
+
+Define $R^\pi(s)=\mathbb{E}_\pi[R_{t+1}\mid S_t=s]$: the expected immediate reward from $s$ when actions are chosen by $\pi$. Expand over $A_t$ by (A.7) and use (B.5):
+
+\[
+\begin{aligned}
+R^\pi(s)
+&=
+\sum_a
+\mathbb{E}[R_{t+1}\mid S_t=s,A_t=a]
+\,
+\pi(a\mid s)
+\quad\text{[A.7; partition expansion]}
+\\
+&=
+\sum_a\pi(a\mid s)\, R(s,a)
+\quad\text{[(B.5)]}.
+\end{aligned}
+\]
+
+\begin{equation}
+R^\pi(s)
+=
+\sum_a\pi(a\mid s)\, R(s,a).
+\tag{B.12}\label{eq:B.12}
+\end{equation}
+
+Define $P^\pi(s'\mid s)=P_\pi(S_{t+1}=s'\mid S_t=s)$: the probability of moving from $s$ to $s'$ under $\pi$. By (A.1),
+
+\[
+P^\pi(s'\mid s)
+=
+\sum_a\pi(a\mid s)\, P(s'\mid s,a).
+\]
+
+Start from the compact form (B.11). Apply linearity (A.5), then write the two expectations with (B.12) and the definition of $P^\pi$:
+
+\[
+\begin{aligned}
+V^\pi(s)
+&=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma V^\pi(S_{t+1})\mid S_t=s\bigr]
+\quad\text{[(B.11)]}
+\\
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s]
++
+\gamma
+\mathbb{E}_\pi\bigl[V^\pi(S_{t+1})\mid S_t=s\bigr]
+\quad\text{[A.5; linearity]}
+\\
+&=
+R^\pi(s)
++
+\gamma
+\sum_{s'}
+V^\pi(s')\, P^\pi(s'\mid s)
+\quad\text{[(B.12); definition of $P^\pi$]}.
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+V^\pi(s)
+=
+R^\pi(s)
++
+\gamma
+\sum_{s'}
+P^\pi(s'\mid s)\, V^\pi(s')
+}
+\tag{B.3}
+\end{equation}
+
+\section{Action-value $Q^\pi$}
+
+We want (B.2). An intermediate step is (B.17).
+
+\subsection{Define the action-value function}
+
+\begin{equation}
+Q^\pi(s,a)
+=
+\mathbb{E}_\pi[G_t\mid S_t=s,A_t=a]
+\tag{B.13}
+\end{equation}
+
+\subsection{Relate $V^\pi(s)$ to $Q^\pi(s,a)$}
+
+Expand over $A_t$ by (A.7). The inner expectation is $Q^\pi(s,a)$ by (B.13):
+
+\[
+\begin{aligned}
+V^\pi(s)
+&=
+\mathbb{E}_\pi[G_t\mid S_t=s]
+\quad\text{[(B.7)]}
+\\
+&=
+\sum_a
+\mathbb{E}_\pi[G_t\mid S_t=s,A_t=a]
+\,
+\pi(a\mid s)
+\quad\text{[A.7; partition expansion]}
+\\
+&=
+\sum_a\pi(a\mid s)\, Q^\pi(s,a)
+\quad\text{[(B.13)]}.
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+V^\pi(s)
+=
+\sum_a \pi(a\mid s)\, Q^\pi(s,a)
+}
+\tag{B.14}\label{eq:B.14}
+\end{equation}
+
+\subsection{Substitute the recursive return}
+
+From (B.6), $G_t=R_{t+1}+\gamma G_{t+1}$. Therefore,
+
+\[
+\begin{aligned}
+Q^\pi(s,a)
+&=
+\mathbb{E}_\pi[G_t\mid S_t=s,A_t=a] \\
+&=
+\mathbb{E}_\pi[R_{t+1}+\gamma G_{t+1}\mid S_t=s,A_t=a] \\
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
++
+\gamma
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a].
+\end{aligned}
+\]
+
+We derive the two terms separately.
+
+\subsection{Immediate Reward}
+
+The action is already fixed. Apply the definition (A.3), then LOTP (A.1) for the joint $P(s',r\mid s,a)$:
+
+\[
+\begin{aligned}
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
+&=
+\sum_r r\,
+P(R_{t+1}=r\mid S_t=s,A_t=a)
+\quad\text{[A.3; conditional expectation]}
+\\
+&=
+\sum_{s',r}
+r\, P(s',r\mid s,a)
+\quad\text{[A.1; LOTP]}.
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
+=
+\sum_{s',r}
+rP(s',r\mid s,a)
+}
+\tag{B.15}
+\end{equation}
+
+\subsection{Future Return}
+
+Expand over $S_{t+1}$ by (A.7). Markov (A.11) drops $(s,a)$ given $s'$; the inner expectation is $V^\pi(s')$ by (B.7). A last LOTP writes $P(s'\mid s,a)=\sum_r P(s',r\mid s,a)$:
+
+\[
+\begin{aligned}
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a]
+&=
+\sum_{s'}
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a,S_{t+1}=s']
+\,
+P(s'\mid s,a)
+\quad\text{[A.7; partition expansion]}
+\\
+&=
+\sum_{s'}
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1}=s']
+\,
+P(s'\mid s,a)
+\quad\text{[A.11; Markov]}
+\\
+&=
+\sum_{s'}
+V^\pi(s')\, P(s'\mid s,a)
+\quad\text{[(B.7)]}
+\\
+&=
+\sum_{s',r}
+P(s',r\mid s,a)\, V^\pi(s')
+\quad\text{[A.1; LOTP]}.
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a]
+=
+\sum_{s',r}
+P(s',r\mid s,a)V^\pi(s')
+}
+\tag{B.16}
+\end{equation}
+
+\subsection{Combine}
+
+Substitute (B.15) and (B.16):
+
+\[
+\begin{aligned}
+Q^\pi(s,a)
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
++
+\gamma
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a] \\
+&=
+\sum_{s',r}
+rP(s',r\mid s,a)
++
+\gamma
+\sum_{s',r}
+P(s',r\mid s,a)V^\pi(s') \\
+&=
+\sum_{s',r}
+P(s',r\mid s,a)
+\left[
+r+\gamma V^\pi(s')
+\right].
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+Q^\pi(s,a)
+=
+\sum_{s',r}
+P(s',r\mid s,a)
+\left[
+r+\gamma V^\pi(s')
+\right]
+}
+\tag{B.17}\label{eq:B.17}
+\end{equation}
+
+\subsection{Write $V^\pi(s')$ in terms of $Q^\pi$}
+
+Apply (B.14) at the next state $s'$:
+
+\[
+V^\pi(s')
+=
+\sum_{a'}
+\pi(a'\mid s')\, Q^\pi(s',a')
+\quad\text{[(B.14)]}.
+\]
+
+Substitute into (B.17):
+
+\begin{equation}
+\boxed{
+Q^\pi(s,a)
+=
+\sum_{s',r}
+P(s',r\mid s,a)
+\left[
+r+
+\gamma
+\sum_{a'}
+\pi(a'\mid s')Q^\pi(s',a')
+\right]
+}
+\tag{B.2}
+\end{equation}
+
+\subsection{Compact one-step form}
+
+The same $Q^\pi$ has a compact form parallel to (B.11). Start from the return recursion under (B.13), apply linearity (A.5), then the tower property (A.9), then Markov (A.11):
+
+\[
+\begin{aligned}
+Q^\pi(s,a)
+&=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma G_{t+1}\mid S_t=s,A_t=a\bigr]
+\quad\text{[(B.13); (B.6)]}
+\\
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
++
+\gamma
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a]
+\quad\text{[A.5; linearity]}
+\\
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
++
+\gamma
+\mathbb{E}_\pi\bigl[
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1},A_{t+1},S_t,A_t]
+\bigm|
+S_t=s,A_t=a
+\bigr]
+\quad\text{[A.9]}
+\\
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
++
+\gamma
+\mathbb{E}_\pi\bigl[
+\mathbb{E}_\pi[G_{t+1}\mid S_{t+1},A_{t+1}]
+\bigm|
+S_t=s,A_t=a
+\bigr]
+\quad\text{[A.11; Markov]}
+\\
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
++
+\gamma
+\mathbb{E}_\pi\bigl[Q^\pi(S_{t+1},A_{t+1})\mid S_t=s,A_t=a\bigr]
+\quad\text{[(B.13)]}
+\\
+&=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma Q^\pi(S_{t+1},A_{t+1})\mid S_t=s,A_t=a\bigr]
+\quad\text{[A.5; linearity]}.
+\end{aligned}
+\]
+
+\begin{equation}
+\boxed{
+Q^\pi(s,a)
+=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma Q^\pi(S_{t+1},A_{t+1})\mid S_t=s,A_t=a\bigr].
+}
+\tag{B.18}\label{eq:B.18}
+\end{equation}
+
+Expanding the right-hand side over $P$ and $\pi$ recovers (B.2).
+
+\section{Expectation relations between $V^\pi$ and $Q^\pi$}
+
+Sections B.3--B.4 expand the Bellman equations as sums over $\pi$ and $P$. Later chapters often need the same links written only with expectations. Recall the definitions (B.7) and (B.13):
+
+\[
+V^\pi(s)
+=
+\mathbb{E}_\pi[G_t\mid S_t=s],
+\qquad
+Q^\pi(s,a)
+=
+\mathbb{E}_\pi[G_t\mid S_t=s,A_t=a].
+\]
+
+\subsection{$V^\pi$ from $Q^\pi$}
+
+From (B.14), for a fixed state $s$,
+
+\begin{equation}
+V^\pi(s)
+=
+\sum_a \pi(a\mid s)\, Q^\pi(s,a)
+=
+\mathbb{E}_{A\sim\pi(\cdot\mid s)}\bigl[Q^\pi(s,A)\bigr].
+\tag{B.19}
+\end{equation}
+
+\subsection{$Q^\pi$ from $V^\pi$}
+
+For a fixed pair $(s,a)$, start from the definition of $Q^\pi$ and the return recursion (B.6):
+
+\[
+\begin{aligned}
+Q^\pi(s,a)
+&=
+\mathbb{E}_\pi[G_t\mid S_t=s,A_t=a]
+\quad\text{[definition]}
+\\
+&=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma G_{t+1}\mid S_t=s,A_t=a\bigr]
+\quad\text{[(B.6)]}
+\\
+&=
+\mathbb{E}_\pi[R_{t+1}\mid S_t=s,A_t=a]
++
+\gamma\,
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a]
+\quad\text{[A.5]}.
+\end{aligned}
+\]
+
+For the future term, condition on $S_{t+1}$ and apply the tower property (A.9):
+
+\[
+\begin{aligned}
+&\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a]
+\\
+&\qquad=
+\mathbb{E}_\pi\Bigl[
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a,S_{t+1}]
+\Bigm|S_t=s,A_t=a
+\Bigr]
+\quad\text{[A.9]}.
+\end{aligned}
+\]
+
+By definition, $V^\pi(S_{t+1})=\mathbb{E}_\pi[G_{t+1}\mid S_{t+1}]$. Markov (A.11) applies to this future term: once $S_{t+1}$ is known, $V^\pi(S_{t+1})$ does not depend on the earlier $(S_t,A_t)$, so \[
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a,S_{t+1}]
+=
+V^\pi(S_{t+1}).
+\] Therefore \[
+\mathbb{E}_\pi[G_{t+1}\mid S_t=s,A_t=a]
+=
+\mathbb{E}_\pi\bigl[V^\pi(S_{t+1})\mid S_t=s,A_t=a\bigr].
+\]
+
+Markov does \textbf{not} let us drop the outer conditioning and write $\mathbb{E}_\pi[V^\pi(S_{t+1})]$. Markov applies when $S_{t+1}$ is already known: then $V^\pi(S_{t+1})$ ignores the past. Here $S_{t+1}$ is still random; it is the outcome of $(S_t,A_t)$ under $P$. So the average of $V^\pi(S_{t+1})$ must keep $|S_t=s,A_t=a$.
+
+Substitute back and apply linearity (A.5):
+
+\begin{equation}
+Q^\pi(s,a)
+=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma V^\pi(S_{t+1})\mid S_t=s,A_t=a\bigr].
+\tag{B.20}
+\end{equation}
+
+Expanding over $P$ recovers (B.17).
+
+\subsection{One-step backups}
+
+The same pattern with only state-values or only action-values is (B.11) and (B.18):
+
+\begin{equation}
+V^\pi(s)
+=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma V^\pi(S_{t+1})\mid S_t=s\bigr],
+\qquad
+Q^\pi(s,a)
+=
+\mathbb{E}_\pi\bigl[R_{t+1}+\gamma Q^\pi(S_{t+1},A_{t+1})\mid S_t=s,A_t=a\bigr].
+\tag{B.21}
+\end{equation}
+
+\chapter{Bellman Optimality Derivation}\label{app:C}
+
+The goal is to derive the Bellman optimality equations (C.2) and (C.5).
+
+\section{Definitions}
+
+\begin{equation}
+V^*(s) = \max_\pi V^\pi(s),
+\qquad
+Q^*(s,a) = \max_\pi Q^\pi(s,a).
+\tag{C.1}
+\end{equation}
+
+Equivalently,
+
+\[
+V^*(s)
+=
+\max_\pi
+\mathbb{E}_\pi[G_t \mid S_t=s],
+\qquad
+Q^*(s,a)
+=
+\max_\pi
+\mathbb{E}_\pi[G_t \mid S_t=s, A_t=a].
+\]
+
+We expand $V^*$ first, then $Q^*$.
+
+\section{State-value $V^*$}
+
+From (C.1), $V^*(s)=\max_\pi V^\pi(s)$. From (B.1),
+
+\[
+V^\pi(s)
+=
+\sum_a \pi(a \mid s)
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^\pi(s')
+\right].
+\]
+
+Therefore
+
+\[
+V^*(s)
+=
+\max_\pi
+\sum_a \pi(a \mid s)
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^\pi(s')
+\right].
+\]
+
+$V^*$ means the agent acts optimally at every state. After one step it is at $s'$, so the remaining value is $V^*(s')$. (Markov: the past action does not change that.) Substitute $V^*(s')$ for $V^\pi(s')$:
+
+\[
+V^*(s)
+=
+\max_\pi
+\sum_a \pi(a \mid s)
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right].
+\]
+
+For every action $a$,
+
+\[
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right]
+\le
+\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right].
+\]
+
+Therefore
+
+\[
+\begin{aligned}
+V^*(s)
+&=
+\max_\pi
+\sum_a \pi(a \mid s)
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right] \\
+&\le
+\max_\pi
+\sum_a \pi(a \mid s)
+\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right].
+\end{aligned}
+\]
+
+In the inner $\max_a$, the action is already fixed to the one that maximizes $\sum_{s',r}P(s',r\mid s,a)[r+\gamma V^*(s')]$. That choice does not change as the outer sum runs over the possible values of $a$ under $\pi$, so the inner max can be taken outside the outer sum. Then use $\sum_a \pi(a \mid s)=1$:
+
+\[
+\begin{aligned}
+V^*(s)
+&\le
+\max_\pi
+\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right]
+\sum_a \pi(a \mid s) \\
+&=
+\max_\pi
+\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right] \\
+&=
+\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right]
+\quad\text{[inner sum does not depend on $\pi$]}.
+\end{aligned}
+\]
+
+For the other direction: by definition $V^*(s)=\max_\pi(\cdots)$, so for any other policy $\hat{\pi}$ --- whether optimal or not ---
+
+\[
+V^*(s)
+\ge
+\sum_a \hat{\pi}(a \mid s)
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right].
+\]
+
+Choose $\hat{\pi}$ that puts probability $1$ on one action $\hat{a}$ attaining the max, and $0$ on every other action. Then
+
+\[
+\begin{aligned}
+\sum_a \hat{\pi}(a \mid s)
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right]
+&=
+\sum_{s',r}
+P(s',r \mid s,\hat{a})
+\left[
+r + \gamma V^*(s')
+\right] \\
+&=
+\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right],
+\end{aligned}
+\]
+
+and therefore
+
+\[
+V^*(s)
+\ge
+\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right].
+\]
+
+The two directions give (C.2):
+
+\begin{equation}
+V^*(s)
+=
+\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right].
+\tag{C.2}\label{eq:C.2}
+\end{equation}
+
+\section{Action-value $Q^*$}
+
+From (C.1), $Q^*(s,a)=\max_\pi Q^\pi(s,a)$. From (B.17),
+
+\[
+Q^\pi(s,a)
+=
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^\pi(s')
+\right].
+\]
+
+Therefore
+
+\[
+Q^*(s,a)
+=
+\max_\pi
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^\pi(s')
+\right].
+\]
+
+The sum over $P$ does not depend on $\pi$. Only the continuation after $s'$ does. As in deriving (C.2), acting optimally from $s'$ onward means $V^\pi(s')$ becomes $V^*(s')$:
+
+\begin{equation}
+Q^*(s,a)
+=
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right].
+\tag{C.3}
+\end{equation}
+
+Compare with (C.2): the right-hand side of (C.2) is $\max_a$ of this same sum. Therefore
+
+\begin{equation}
+V^*(s) = \max_a Q^*(s,a).
+\tag{C.4}
+\end{equation}
+
+At the next state this is $V^*(s')=\max_{a'} Q^*(s',a')$ by (C.4). Substitute into (C.3):
+
+\begin{equation}
+Q^*(s,a)
+=
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma \max_{a'} Q^*(s',a')
+\right].
+\tag{C.5}\label{eq:C.5}
+\end{equation}
+
+\section{Optimal policy}\label{app:C.4}
+
+We want a policy $\pi^*$ that attains the optimum. (C.2) and (C.5) already give that optimum as a maximum over actions, so $\pi^*$ is obtained by choosing actions that attain those maxima.
+
+From (C.2), an optimal policy at $s$ chooses an action attaining this max:
+
+\begin{equation}
+\pi^*(s)
+=
+\arg\max_a
+\sum_{s',r}
+P(s',r \mid s,a)
+\left[
+r + \gamma V^*(s')
+\right].
+\tag{C.6}
+\end{equation}
+
+From (C.4), the same policy is
+
+\begin{equation}
+\pi^*(s) = \arg\max_a Q^*(s,a).
+\tag{C.7}
+\end{equation}
+
+(Acting from $V^*$ needs $P$; acting from the table $Q^*$ does not. Computing either table from (C.2) or (C.5) uses $P$.)
+
+\begin{itemize}
+\item \textbf{Greedy.} Put probability $1$ on one maximizing action. If only one action maximizes, this is the only optimal choice at $s$. If several do, any one of them may be chosen with probability $1$.
+\item \textbf{Randomized among maximizers.} If several actions maximize, $\pi^*$ may put any probabilities on those actions only. All other actions get probability $0$. This is still optimal: every action that can be chosen still attains the $\max$.
+\end{itemize}
+
+\chapter{Robbins--Monro Step-Size Conditions}\label{app:D}
+
+\section*{Goal}
+
+Derive the two conditions on $\{\alpha_n\}$ used in Chapter 4 so that the incremental Monte Carlo update (4.3), for a fixed $\pi$ and a stationary environment $P$, has $V_n\to V^\pi$. First-visit returns from a state $s$ are i.i.d.\ with mean $\mu=V^\pi(s)$ and finite variance, so the sample mean (A.20) is unbiased for $\mu$ by (A.21) and converges by (A.23).
+
+\section{Error, sample error, and unrolling}
+
+The incremental update (4.3), with step $\alpha_n$ on the $n$-th sample ($0<\alpha_n\le 1$), is
+\begin{equation}
+V_{n+1}=V_n+\alpha_n(G_n-V_n).
+\tag{D.1}
+\end{equation}
+
+$\mu=V^\pi(s)=\mathbb{E}[G]$. After enough steps we want the estimate $V$ to converge to that $\mu$. At a finite step $n$ it has not arrived. The estimation error is
+\begin{equation}
+e_n=V_n-\mu.
+\tag{D.2}
+\end{equation}
+The sample error $\xi_n$ is how far this sample return $G_n$ sits from $\mu$:
+\begin{equation}
+\xi_n=G_n-\mu.
+\tag{D.3}
+\end{equation}
+\[
+\mathbb{E}[\xi_n]=\mathbb{E}[G_n]-\mu=\mu-\mu=0.
+\]
+By (A.17),
+\[
+\mathrm{Var}(G_k)=\mathbb{E}[(G_k-\mu)^2]=\mathbb{E}[\xi_k^2].
+\]
+Every $G_k$ is generated from the same policy $\pi$ and the same environment $P$, hence all $G_k$ have the same distribution, so the variance is the same constant $\sigma^2$ for every $k$: $\mathrm{Var}(G_k)=\mathbb{E}[\xi_k^2]=\sigma^2$.
+
+Subtract $\mu$ from both sides of (D.1) and substitute $G_n-V_n=\xi_n-e_n$:
+\begin{equation}
+e_{n+1}
+=
+V_{n+1}-\mu
+=
+(V_n-\mu)+\alpha_n(G_n-V_n)
+=
+e_n+\alpha_n(\xi_n-e_n)
+=
+(1-\alpha_n)e_n+\alpha_n\xi_n.
+\tag{D.4}
+\end{equation}
+
+The first steps from $e_1$ are
+\[
+\begin{aligned}
+e_2
+&=
+(1-\alpha_1)e_1+\alpha_1\xi_1,\\
+e_3
+&=
+(1-\alpha_2)e_2+\alpha_2\xi_2
+=
+(1-\alpha_2)(1-\alpha_1)e_1+(1-\alpha_2)\alpha_1\xi_1+\alpha_2\xi_2,\\
+e_4
+&=
+(1-\alpha_3)e_3+\alpha_3\xi_3
+=
+(1-\alpha_3)(1-\alpha_2)(1-\alpha_1)e_1
++(1-\alpha_3)(1-\alpha_2)\alpha_1\xi_1
++(1-\alpha_3)\alpha_2\xi_2
++\alpha_3\xi_3.
+\end{aligned}
+\]
+The coefficient of $e_1$ is the product of every $(1-\alpha_k)$ so far. The coefficient of $\xi_k$ is $\alpha_k$ times the product of the later $(1-\alpha_j)$. After $n$ updates that is
+\begin{equation}
+e_{n+1}
+=
+\underbrace{\left(\prod_{k=1}^{n}(1-\alpha_k)\right)e_1}_{\text{Term 1: Initial Bias}}
++
+\underbrace{\sum_{k=1}^{n}\alpha_k\left(\prod_{j=k+1}^{n}(1-\alpha_j)\right)\xi_k}_{\text{Term 2: Accumulated Noise }(E_{\text{noise}})}.
+\tag{D.5}
+\end{equation}
+
+Term 1 is the starting estimation error $e_1=V_1-\mu$, multiplied by every $(1-\alpha_k)$ so far. $V_1$ is an arbitrary initialization, not $\mu$, so this leftover from the start is the initial bias.
+
+Term 2 is accumulated noise because it sums historical sample errors $\xi_k=G_k-\mu$ from $k=1$ to $k=n$, each scaled by $\alpha_k$ when it enters and then by the later $(1-\alpha_j)$.
+
+To converge, we need $\lim_{n\to\infty}e_{n+1}=0$. In that case $V_n\to V^\pi$. Term 1 is leftover start and dies in the long run. Term 2 is random with mean $0$, so it cannot cancel Term 1. Each term must go to $0$ on its own. The two conditions of \citetxt{robbins1951}{Robbins and Monro, 1951} below are what force that.
+
+We will derive those two conditions. Before that, for all real $x$:
+\begin{equation}
+1-x\le e^{-x}.
+\tag{D.6}
+\end{equation}
+Let $f(x)=e^{-x}-(1-x)$. Then $f'(x)=1-e^{-x}$, so $f'(x)=0$ at $x=0$. The second derivative is $f''(x)=e^{-x}$, and $f''(0)=1>0$, so $x=0$ is a minimum. Also $f(0)=0$. Hence $f(x)\ge 0$ for all real $x$: $1-x\le e^{-x}$.
+
+\section{Term 1 $\to 0$ $\Rightarrow\sum\alpha_n=\infty$}
+
+The first term is $\bigl(\prod_{k=1}^{n}(1-\alpha_k)\bigr)e_1$. For this to go to $0$ for every initial $e_1$, we need $\prod_{k=1}^{n}(1-\alpha_k)\to 0$. Taking $x=\alpha_k$ in (D.6) gives $1-\alpha_k\le e^{-\alpha_k}$, so
+\[
+\prod_{k=1}^{n}(1-\alpha_k)
+\le
+\prod_{k=1}^{n}e^{-\alpha_k}
+=
+e^{-\sum_{k=1}^{n}\alpha_k}.
+\]
+If $\sum_{k=1}^{\infty}\alpha_k=\infty$, the exponent goes to $-\infty$, so $e^{-\sum\alpha_k}\to 0$, hence the product $\to 0$ and the first term vanishes.
+\begin{equation}
+\sum_{k=1}^{\infty}\alpha_k=\infty.
+\tag{D.7}
+\end{equation}
+If that sum is finite, $e^{-\sum\alpha}$ stays a positive number. Then (for $\alpha_k\le 1/2$) the product stays away from $0$, so a leftover fraction of $e_1$ remains and $e_{n+1}\not\to 0$.
+
+\section{Term 2 $\to 0$ $\Rightarrow\sum\alpha_n^2<\infty$}
+
+The second term is
+\[
+\sum_{k=1}^{n}\alpha_k\Biggl(\prod_{j=k+1}^{n}(1-\alpha_j)\Biggr)\xi_k.
+\]
+Take its expectation. The products of $(1-\alpha_j)$ are numbers, so they come out of $\mathbb{E}$:
+\[
+\mathbb{E}\Biggl[\sum_{k=1}^{n}\alpha_k\Biggl(\prod_{j=k+1}^{n}(1-\alpha_j)\Biggr)\xi_k\Biggr]
+=
+\sum_{k=1}^{n}\alpha_k\Biggl(\prod_{j=k+1}^{n}(1-\alpha_j)\Biggr)\mathbb{E}[\xi_k]
+=
+0,
+\]
+because $\mathbb{E}[\xi_k]=0$. The mean of the second term is always $0$. To force that sum itself to $0$, we control its variance. The mean is $0$, so (A.19) gives $\mathrm{Var}(X)=\mathbb{E}[X^2]$.
+The accumulated-noise variance is $\mathrm{Var}(E_{\text{noise}})$. Mean already $0$, so
+\[
+\mathrm{Var}(E_{\text{noise}})
+=
+\mathbb{E}\Biggl[\Biggl(\sum_{k=1}^{n}\alpha_k\prod_{j=k+1}^{n}(1-\alpha_j)\,\xi_k\Biggr)^2\Biggr].
+\]
+When the square of the sum is expanded, the combinations of $\xi_k$ that appear are $\xi_k^2$ (the same $k$ twice) and $\xi_k\xi_m$ for $k\neq m$:
+\[
+\Biggl(\sum_{k=1}^{n}\alpha_k\prod_{j=k+1}^{n}(1-\alpha_j)\,\xi_k\Biggr)^2
+=
+\sum_{k=1}^{n}\Biggl(\alpha_k\prod_{j=k+1}^{n}(1-\alpha_j)\Biggr)^2\xi_k^2
++
+\sum_{k\neq m}\alpha_k\alpha_m\Biggl(\prod_{j=k+1}^{n}(1-\alpha_j)\Biggr)\Biggl(\prod_{j=m+1}^{n}(1-\alpha_j)\Biggr)\xi_k\xi_m.
+\]
+For $k\neq m$, $\xi_k$ and $\xi_m$ are independent: $\xi_k=G_k-\mu$ and $\xi_m=G_m-\mu$ come from first-visit returns in separate episodes. So $\mathbb{E}[\xi_k\xi_m]=\mathbb{E}[\xi_k]\mathbb{E}[\xi_m]=0$, every cross term drops, and the expected square equals
+\[
+\sum_{k=1}^{n}\Biggl(\alpha_k^2\Biggl(\prod_{j=k+1}^{n}(1-\alpha_j)\Biggr)^2\mathbb{E}[\xi_k^2]\Biggr).
+\]
+From above, $\mathrm{Var}(G_k)=\sigma^2$, so $\mathbb{E}[\xi_k^2]=\sigma^2$. That common number comes out of the sum:
+\[
+\sigma^2\sum_{k=1}^{n}\alpha_k^2\Biggl(\prod_{j=k+1}^{n}(1-\alpha_j)\Biggr)^2.
+\]
+Since $0\le\alpha_j\le 1$, each factor $1-\alpha_j$ lies in $[0,1]$, so each product is at most $1$, and its square is at most $1$. Hence
+\begin{equation}
+\mathrm{Var}(E_{\text{noise}})
+\le
+\sigma^2\sum_{k=1}^{n}\alpha_k^2.
+\tag{D.8}
+\end{equation}
+As $n\to\infty$, the right-hand side stays finite iff
+\begin{equation}
+\sum_{k=1}^{\infty}\alpha_k^2<\infty.
+\tag{D.9}
+\end{equation}
+This condition is necessary and sufficient to keep the step-size energy small enough so that the accumulated-noise variance $\mathrm{Var}(E_{\text{noise}})$ vanishes.
+
+Next we show $\mathrm{Var}(E_{\text{noise}})\to 0\implies E_{\text{noise}}\to 0$ via Chebyshev's inequality. For a random variable $X$ with mean $\mu$ and standard deviation $\sigma_X$ from (A.18), and any $k>0$,
+\begin{equation}
+\mathbb{P}(\lvert X-\mu\rvert\ge k\sigma_X)
+\le
+\frac{1}{k^2}.
+\tag{D.10}
+\end{equation}
+Set $\varepsilon=k\sigma_X$, so $k=\varepsilon/\sigma_X$:
+\[
+\mathbb{P}(\lvert X-\mu\rvert\ge\varepsilon)
+\le
+\frac{\sigma_X^2}{\varepsilon^2}
+=
+\frac{\mathrm{Var}(X)}{\varepsilon^2}.
+\]
+Take $X=E_{\text{noise}}$ (Term 2), with mean $\mu=0$ and variance $\mathrm{Var}(E_{\text{noise}})$:
+\[
+\mathbb{P}(\lvert E_{\text{noise}}\rvert\ge\varepsilon)
+\le
+\frac{\mathrm{Var}(E_{\text{noise}})}{\varepsilon^2}.
+\]
+Let $n\to\infty$, where $\mathrm{Var}(E_{\text{noise}})\to 0$:
+\[
+\lim_{n\to\infty}\mathbb{P}(\lvert E_{\text{noise}}\rvert\ge\varepsilon)
+\le
+\frac{0}{\varepsilon^2}
+=
+0.
+\]
+The sample errors $\xi_k$ never stop, but because $\sum\alpha_k^2<\infty$, the steps shrink fast enough that $\mathrm{Var}(E_{\text{noise}})\to 0$. For every $\varepsilon>0$, $\lim_{n\to\infty}\mathbb{P}(\lvert E_{\text{noise}}\rvert\ge\varepsilon)=0$, so $E_{\text{noise}}\to 0$ in probability: $\lim_{n\to\infty}E_{\text{noise}}=0$.
+
+The two conditions are
+\begin{equation}
+\sum_{k=1}^{\infty}\alpha_k=\infty,
+\qquad
+\sum_{k=1}^{\infty}\alpha_k^2<\infty.
+\tag{D.11}
+\end{equation}
+
+\chapter{Policy Gradient Theorem and Expectations}\label{app:E}
+
+\section*{Goal}
+
+First show that the expected score is zero, and that past-reward and baseline terms in the policy gradient therefore have mean zero (used in Chapters 9--10). Then derive the \textbf{policy gradient theorem}: rewrite $\nabla_\theta J(\theta)$ as an average of $Q^{\pi_\theta}\,\nabla_\theta\log\pi_\theta$ under on-policy discounted state visits, and show that it equals (9.7a).
+
+\section{The expected score is zero}
+
+Fix a state $s$. The policy $\pi_\theta(\cdot\mid s)$ is a distribution over actions whose probabilities depend on the parameters $\theta$. The actions are fixed; the probability of each action is a function of $\theta$. For example, for a loaded coin with loading factor $\theta$, the outcomes are heads and tails, and $P(\text{heads})=\theta$, $P(\text{tails})=1-\theta$. The gradient $\nabla_\theta\log\pi_\theta(a\mid s)$ is called the \textbf{score}. Writing its expectation as a sum over actions (A.12), and using $\nabla_\theta\log u=\frac{1}{u}\nabla_\theta u$ with $u=\pi_\theta(a\mid s)$,
+
+\begin{equation}
+\begin{aligned}
+\mathbb{E}_{A\sim\pi_\theta(\cdot\mid s)}\bigl[\nabla_\theta\log\pi_\theta(A\mid s)\bigr]
+&=
+\sum_{a}\pi_\theta(a\mid s)\,\nabla_\theta\log\pi_\theta(a\mid s)
+\\
+&=
+\sum_{a}\nabla_\theta\pi_\theta(a\mid s)
+\\
+&=
+\nabla_\theta\sum_{a}\pi_\theta(a\mid s)
+\\
+&=
+\nabla_\theta 1
+\\
+&=
+0.
+\end{aligned}
+\tag{E.1}\label{eq:E.1}
+\end{equation}
+
+The probabilities sum to $1$ for every $\theta$, so a change in $\theta$ only moves probability between actions, and the changes cancel.
+
+\section{Past-reward terms have expectation zero}
+
+Let $H_t=(S_0,A_0,R_1,\ldots,R_t,S_t)$ be the history up to $S_t$. For $k<t$, the reward $R_{k+1}$ is part of $H_t$, so it is a fixed number once $H_t$ is given. Given $H_t$, the agent draws $A_t$ from $\pi_\theta(\cdot\mid S_t)$, so $\mathbb{E}\bigl[\nabla_\theta\log\pi_\theta(A_t\mid S_t)\bigm|H_t\bigr]=0$ by (E.1). Then
+
+\begin{equation}
+\begin{aligned}
+\mathbb{E}\bigl[R_{k+1}\,\nabla_\theta\log\pi_\theta(A_t\mid S_t)\bigr]
+&=
+\mathbb{E}\Bigl[\mathbb{E}\bigl[R_{k+1}\,\nabla_\theta\log\pi_\theta(A_t\mid S_t)\bigm|H_t\bigr]\Bigr]
+\quad\text{[A.8]}
+\\
+&=
+\mathbb{E}\Bigl[R_{k+1}\,\mathbb{E}\bigl[\nabla_\theta\log\pi_\theta(A_t\mid S_t)\bigm|H_t\bigr]\Bigr]
+\quad\text{[A.5; $R_{k+1}$ is fixed given $H_t$]}
+\\
+&=
+\mathbb{E}[R_{k+1}\cdot 0]
+\quad\text{[E.1]}
+\\
+&=
+0.
+\end{aligned}
+\tag{E.2}\label{eq:E.2}
+\end{equation}
+
+\section{The baseline term has expectation zero}
+
+The state $S_t$ is random: different episodes reach different states at time $t$, depending on the start state, the actions sampled from $\pi_\theta$, and the environment's transitions. The expectation therefore averages over both the state and the action, \[
+\mathbb{E}\bigl[b(S_t)\,\nabla_\theta\log\pi_\theta(A_t\mid S_t)\bigr]
+=
+\sum_{s}P(S_t=s)\sum_{a}\pi_\theta(a\mid s)\,b(s)\,\nabla_\theta\log\pi_\theta(a\mid s),
+\] and $b(S_t)$ takes a different value in each state, so it cannot be taken outside the whole expectation. Within the inner sum the state $s$ is fixed and only the action varies, so $b(s)$ is a constant there. The tower property (A.8) separates the two sums: first fix $S_t$ and average over actions, then average over states. With the same steps as in E.2, conditioning on $S_t$ instead of $H_t$,
+
+\begin{equation}
+\begin{aligned}
+\mathbb{E}\bigl[b(S_t)\,\nabla_\theta\log\pi_\theta(A_t\mid S_t)\bigr]
+&=
+\mathbb{E}\Bigl[\mathbb{E}\bigl[b(S_t)\,\nabla_\theta\log\pi_\theta(A_t\mid S_t)\bigm|S_t\bigr]\Bigr]
+\quad\text{[A.8]}
+\\
+&=
+\mathbb{E}\Bigl[b(S_t)\,\mathbb{E}\bigl[\nabla_\theta\log\pi_\theta(A_t\mid S_t)\bigm|S_t\bigr]\Bigr]
+\quad\text{[A.5; $b(S_t)$ is fixed given $S_t$]}
+\\
+&=
+\mathbb{E}[b(S_t)\cdot 0]
+\quad\text{[E.1]}
+\\
+&=
+0.
+\end{aligned}
+\tag{E.3}\label{eq:E.3}
+\end{equation}
+
+The second line needs the baseline to be fixed given $S_t$. A weight $b(S_t,A_t)$ that differs between actions cannot be taken outside the expectation over $A_t$, and its product with the score need not have mean zero.
+
+\section{Policy gradient theorem}
+
+As in Chapter 9, $J(\theta)=V^{\pi_\theta}(s_0)$: expected return from start state $s_0$ under $\pi_\theta$, horizon $T$, discount $\gamma$. (Infinite horizon: same with $T\to\infty$.)
+
+Start at $s_0$ and follow $\pi_\theta$. The state $s$ may appear at several times. The weight \[
+\mu_{\pi_\theta}(s)
+=
+\sum_{t=0}^{T-1}
+\gamma^t\,P\bigl(S_t=s\mid S_0=s_0,\pi_\theta\bigr)
+\] is the \textbf{discounted visitation} of $s$: add $\gamma^t$ whenever the probability of being in $s$ at time $t$ is counted. Early visits weigh more than late ones. States never reached from $s_0$ under $\pi_\theta$ have $\mu_{\pi_\theta}(s)=0$.
+
+\textbf{Theorem (policy gradient; \citetxt{sutton2000}{Sutton et al., 2000}).} $\nabla_\theta J(\theta)$ equals the sum over states of $\mu_{\pi_\theta}(s)$ times the sum over actions of $(\nabla_\theta\pi_\theta(a\mid s))\,Q^{\pi_\theta}(s,a)$. Only how $\theta$ changes the policy in visited states, and how good those actions are, enter. The transition kernel does not appear in the gradient: \begin{equation}
+\nabla_\theta J(\theta)
+=
+\sum_s\mu_{\pi_\theta}(s)
+\sum_a
+\bigl(\nabla_\theta\pi_\theta(a\mid s)\bigr)\,
+Q^{\pi_\theta}(s,a).
+\tag{E.4}
+\end{equation} Equivalently, with $\nabla_\theta\pi_\theta=\pi_\theta\,\nabla_\theta\log\pi_\theta$, \begin{equation}
+\nabla_\theta J(\theta)
+=
+\mathbb{E}_{s\sim\mu_{\pi_\theta},\,a\sim\pi_\theta(\cdot\mid s)}
+\bigl[
+Q^{\pi_\theta}(s,a)\,
+\nabla_\theta\log\pi_\theta(a\mid s)
+\bigr].
+\tag{E.5}
+\end{equation}
+
+\textbf{Proof of (E.4).} Write $\pi$ for $\pi_\theta$ and $V$, $Q$ for $V^{\pi_\theta}$, $Q^{\pi_\theta}$.
+
+Step 1 --- differentiate $V$. From (B.19) and (B.11), \[
+V(s)
+=
+\sum_a\pi(a\mid s)\,Q(s,a).
+\] Both $\pi$ and $Q$ depend on $\theta$. Differentiate the product term by term: \begin{equation}
+\nabla_\theta V(s)
+=
+\sum_a\bigl(\nabla_\theta\pi(a\mid s)\bigr)\,Q(s,a)
++
+\sum_a\pi(a\mid s)\,\nabla_\theta Q(s,a).
+\tag{*}
+\end{equation}
+
+Step 2 --- differentiate $Q$. From (B.18), \[
+Q(s,a)
+=
+\sum_{s',r}P(s',r\mid s,a)\bigl(r+\gamma V(s')\bigr).
+\] Apply $\nabla_\theta$ inside the sum. The factors $P(s',r\mid s,a)$ and $r$ do not depend on $\theta$, so \[
+\begin{aligned}
+\nabla_\theta Q(s,a)
+&=
+\sum_{s',r}P(s',r\mid s,a)\,\nabla_\theta\bigl(r+\gamma V(s')\bigr)
+\\
+&=
+\sum_{s',r}P(s',r\mid s,a)\,\gamma\,\nabla_\theta V(s')
+\\
+&=
+\gamma\sum_{s'}\Biggl(\sum_r P(s',r\mid s,a)\Biggr)\nabla_\theta V(s')
+\\
+&=
+\gamma\sum_{s'}P(s'\mid s,a)\,\nabla_\theta V(s').
+\end{aligned}
+\]
+
+Step 3 --- substitute into $(*)$. \[
+\begin{aligned}
+\nabla_\theta V(s)
+&=
+\sum_a\bigl(\nabla_\theta\pi(a\mid s)\bigr)\,Q(s,a)
++
+\sum_a\pi(a\mid s)\Biggl(
+\gamma\sum_{s'}P(s'\mid s,a)\,\nabla_\theta V(s')
+\Biggr)
+\\
+&=
+\sum_a\bigl(\nabla_\theta\pi(a\mid s)\bigr)\,Q(s,a)
++
+\gamma\sum_{s'}
+\Biggl(
+\sum_a\pi(a\mid s)\,P(s'\mid s,a)
+\Biggr)
+\nabla_\theta V(s').
+\end{aligned}
+\] The inner sum is the next-state distribution under $\pi$: \[
+P^\pi(s'\mid s)
+=
+\sum_a\pi(a\mid s)\,P(s'\mid s,a)
+=
+P(S_{t+1}=s'\mid S_t=s,\pi).
+\] Write \[
+\phi(s)
+=
+\sum_a\bigl(\nabla_\theta\pi(a\mid s)\bigr)\,Q(s,a)
+\] for the first sum. Then \begin{equation}
+\nabla_\theta V(s)
+=
+\phi(s)
++
+\gamma\sum_{s'}P^\pi(s'\mid s)\,\nabla_\theta V(s').
+\tag{**}
+\end{equation}
+
+Step 4 --- unroll $(**)$ from $s_0$. Apply $(**)$ at $s=s_0$: \[
+\nabla_\theta V(s_0)
+=
+\phi(s_0)
++
+\gamma\sum_{s_1}P^\pi(s_1\mid s_0)\,\nabla_\theta V(s_1).
+\] Apply $(**)$ again to every $\nabla_\theta V(s_1)$: \[
+\begin{aligned}
+\nabla_\theta V(s_0)
+&=
+\phi(s_0)
++
+\gamma\sum_{s_1}P^\pi(s_1\mid s_0)
+\Biggl(
+\phi(s_1)
++
+\gamma\sum_{s_2}P^\pi(s_2\mid s_1)\,\nabla_\theta V(s_2)
+\Biggr)
+\\
+&=
+\phi(s_0)
++
+\gamma\sum_{s_1}P(S_1=s_1\mid S_0=s_0,\pi)\,\phi(s_1)
+\\
+&\qquad
++
+\gamma^2\sum_{s_2}P(S_2=s_2\mid S_0=s_0,\pi)\,\nabla_\theta V(s_2).
+\end{aligned}
+\] Repeat the same substitution for $\nabla_\theta V(s_2),\ldots,\nabla_\theta V(s_{T-1})$. After $T$ substitutions, \[
+\begin{aligned}
+\nabla_\theta V(s_0)
+&=
+\sum_{t=0}^{T-1}
+\gamma^t
+\sum_s
+P(S_t=s\mid S_0=s_0,\pi)\,\phi(s)
+\\
+&\qquad
++
+\gamma^T
+\sum_s
+P(S_T=s\mid S_0=s_0,\pi)\,\nabla_\theta V(s).
+\end{aligned}
+\] With horizon $T$ there is no return after time $T$, so the value after the last step is identically zero and the remainder vanishes. (If $T\to\infty$ and $\lvert\gamma\rvert<1$ with bounded rewards, the remainder tends to zero as well.) Therefore \[
+\nabla_\theta V(s_0)
+=
+\sum_{t=0}^{T-1}
+\sum_s
+\gamma^t\,P(S_t=s\mid S_0=s_0,\pi)\,\phi(s).
+\]
+
+Step 5 --- pack the weights into $\mu_\pi$. Interchange the finite sums over $t$ and $s$: \[
+\nabla_\theta V(s_0)
+=
+\sum_s
+\Biggl(
+\sum_{t=0}^{T-1}
+\gamma^t\,P(S_t=s\mid S_0=s_0,\pi)
+\Biggr)
+\phi(s)
+=
+\sum_s\mu_\pi(s)\,\phi(s).
+\] Restore $\phi(s)=\sum_a(\nabla_\theta\pi(a\mid s))\,Q(s,a)$ and $J(\theta)=V(s_0)$: \[
+\nabla_\theta J(\theta)
+=
+\sum_s\mu_\pi(s)
+\sum_a\bigl(\nabla_\theta\pi(a\mid s)\bigr)\,Q(s,a),
+\] which is (E.4).
+
+\textbf{Proof of (E.5).} Start from (E.4): \[
+\nabla_\theta J(\theta)
+=
+\sum_s\mu_{\pi_\theta}(s)
+\sum_a
+\bigl(\nabla_\theta\pi_\theta(a\mid s)\bigr)\,
+Q^{\pi_\theta}(s,a).
+\]
+
+Step 1 --- score identity. Fix $(s,a)$ with $\pi_\theta(a\mid s)>0$. Set $u=\pi_\theta(a\mid s)$. Then \[
+\nabla_\theta\log u
+=
+\frac{1}{u}\,\nabla_\theta u,
+\] so \[
+\nabla_\theta u
+=
+u\,\nabla_\theta\log u,
+\] i.e. \[
+\nabla_\theta\pi_\theta(a\mid s)
+=
+\pi_\theta(a\mid s)\,\nabla_\theta\log\pi_\theta(a\mid s).
+\] If $\pi_\theta(a\mid s)=0$, that action is absent from both sums in (E.4) and (E.5), so it may be omitted.
+
+Step 2 --- substitute into the inner sum. For each fixed $s$, \[
+\begin{aligned}
+\sum_a\bigl(\nabla_\theta\pi_\theta(a\mid s)\bigr)\,Q^{\pi_\theta}(s,a)
+&=
+\sum_a
+\pi_\theta(a\mid s)\,
+Q^{\pi_\theta}(s,a)\,
+\nabla_\theta\log\pi_\theta(a\mid s)
+\\
+&=
+\mathbb{E}_{a\sim\pi_\theta(\cdot\mid s)}
+\bigl[
+Q^{\pi_\theta}(s,a)\,
+\nabla_\theta\log\pi_\theta(a\mid s)
+\bigr],
+\end{aligned}
+\] where the last line is the definition of expectation under $\pi_\theta(\cdot\mid s)$ (A.12).
+
+Step 3 --- put the outer sum back. \[
+\begin{aligned}
+\nabla_\theta J(\theta)
+&=
+\sum_s\mu_{\pi_\theta}(s)
+\sum_a
+\pi_\theta(a\mid s)\,
+Q^{\pi_\theta}(s,a)\,
+\nabla_\theta\log\pi_\theta(a\mid s)
+\\
+&=
+\sum_s\mu_{\pi_\theta}(s)\,
+\mathbb{E}_{a\sim\pi_\theta(\cdot\mid s)}
+\bigl[
+Q^{\pi_\theta}(s,a)\,
+\nabla_\theta\log\pi_\theta(a\mid s)
+\bigr].
+\end{aligned}
+\] The notation $\mathbb{E}_{s\sim\mu_{\pi_\theta},\,a\sim\pi_\theta(\cdot\mid s)}$ in (E.5) means this double expression: weight each state by $\mu_{\pi_\theta}(s)$ (these weights need not sum to $1$), and given $s$ draw $a\sim\pi_\theta(\cdot\mid s)$. That is exactly the display above, so (E.5) holds.
+
+\section{Link to (9.7a)}
+
+Sampling a trajectory from $\pi_\theta$ starting at $s_0$ produces pairs $(S_t,A_t)$ whose discounted occupancy is $\mu_{\pi_\theta}$: averaging $\gamma^t f(S_t,A_t)$ along the trajectory has the same mean as averaging $f(s,a)$ under $s\sim\mu_{\pi_\theta}$, $a\sim\pi_\theta(\cdot\mid s)$. Taking $f=Q\,\nabla\log\pi$ in (E.5) recovers (9.7a): \[
+\nabla_\theta J(\theta)
+=
+\mathbb{E}_{\tau\sim\pi_\theta}\Biggl[
+\sum_{t=0}^{T-1}
+\gamma^{t}Q^{\pi_\theta}(S_t,A_t)\,\nabla_\theta\log\pi_\theta(A_t\mid S_t)
+\Biggr].
+\] Replacing $Q^{\pi_\theta}(S_t,A_t)$ by the sample return $G_t$ gives (9.7). Replacing $Q$ by the advantage $A^{\pi_\theta}=Q^{\pi_\theta}-V^{\pi_\theta}$ is valid by (E.3) and yields (10.6).
+
+\chapter{KL Non-Negativity}\label{app:F}
+
+\section*{Goal}
+
+Show that the KL divergence used in Section 11.4 is always at least zero.
+
+\section{Proof}
+
+Let $p$ and $q$ be distributions on the same finite set, with $q(y)>0$ whenever $p(y)>0$. The KL divergence is \[
+\mathrm{KL}(p\|q)
+=
+\sum_y p(y)\log\frac{p(y)}{q(y)}
+=
+\mathbb{E}_{y\sim p}\Bigl[\log\frac{p(y)}{q(y)}\Bigr]
+=
+-\,\mathbb{E}_{y\sim p}\Bigl[\log\frac{q(y)}{p(y)}\Bigr].
+\] Since $-\log$ is convex, Jensen's inequality (\citetxt{jensen1906}{Jensen, 1906}) applies: for a convex function $f$, the function of the average is at most the average of the function. For finitely many points that is \[
+f\Bigl(\frac{x_1+\cdots+x_n}{n}\Bigr)
+\le
+\frac{f(x_1)+\cdots+f(x_n)}{n},
+\] and in expectation form \[
+f\bigl(\mathbb{E}[X]\bigr)\le\mathbb{E}\bigl[f(X)\bigr].
+\] (The inequality is about averages, not about $f(x_1)+\cdots+f(x_n)$ versus $f(x_1+\cdots+x_n)$.) With $f=-\log$ and any positive random variable $X$, this is \[
+-\log\mathbb{E}[X]\le\mathbb{E}[-\log X],
+\] or equivalently $\mathbb{E}[-\log X]\ge-\log\mathbb{E}[X]$. Take $X=q(y)/p(y)$ with $y\sim p$. Then \begin{equation}
+\begin{aligned}
+\mathrm{KL}(p\|q)
+&=
+\mathbb{E}_{y\sim p}\bigl[-\log X\bigr]
+\\
+&\ge
+-\log\mathbb{E}_{y\sim p}[X]
+\\
+&=
+-\log\sum_y p(y)\cdot\frac{q(y)}{p(y)}
+\\
+&=
+-\log\sum_y q(y)
+\\
+&=
+-\log 1
+\\
+&=
+0.
+\end{aligned}
+\tag{F.1}
+\end{equation} Equality holds in Jensen for strictly concave $\log$ only when $X$ is constant on the support of $p$. With $\sum_y p(y)=\sum_y q(y)=1$, that forces $p=q$.
+
+In Section 11.4, $p=\pi_\theta(\cdot\mid x)$ and $q=\pi_{\text{ref}}(\cdot\mid x)$, so \[
+\mathrm{KL}\bigl(\pi_\theta(\cdot\mid x)\,\|\,\pi_{\text{ref}}(\cdot\mid x)\bigr)\ge 0,
+\] with equality only when the two distributions agree.
+
+\chapter{PPO Derivations}\label{app:G}
+
+Details for Section 11.6 that are not repeated there: the autodiff check that $\nabla_\theta L^{\mathrm{IS}}$ matches (11.8), the clip cases and tables for (11.9), and the clip-versus-KL contrast (\citetxt{schulman2017}{Schulman et al., 2017}).
+
+\section{Gradient of $L^{\mathrm{IS}}$}
+
+Section 11.6 uses \[
+L^{\mathrm{IS}}(\theta)
+=
+-\frac{1}{K}\sum_{k=1}^{K}\rho_k(\theta)\,A_k,
+\qquad
+\rho_k(\theta)
+=
+\frac{\pi_\theta(y_k\mid x)}{\pi_{\theta_{\mathrm{old}}}(y_k\mid x)},
+\] with $A_k$ and $\pi_{\theta_{\mathrm{old}}}$ fixed. Differentiating, \[
+\nabla_\theta L^{\mathrm{IS}}
+=
+-\frac{1}{K}\sum_{k=1}^{K}
+A_k\,\nabla_\theta\rho_k(\theta).
+\] For each $k$, \[
+\nabla_\theta\rho_k
+=
+\frac{\nabla_\theta\pi_\theta(y_k\mid x)}{\pi_{\theta_{\mathrm{old}}}(y_k\mid x)}
+=
+\rho_k(\theta)\,\nabla_\theta\log\pi_\theta(y_k\mid x),
+\] using $\nabla_\theta\pi_\theta=\pi_\theta\,\nabla_\theta\log\pi_\theta$. Therefore \[
+\nabla_\theta L^{\mathrm{IS}}
+=
+-\frac{1}{K}\sum_{k=1}^{K}
+\rho_k(\theta)\,A_k\,
+\nabla_\theta\log\pi_\theta(y_k\mid x),
+\] which is the sample estimate of $\nabla_\theta L$ in Section 11.6. Descent on $L^{\mathrm{IS}}$ implements (11.8). When $\theta=\theta_{\mathrm{old}}$, every $\rho_k=1$ and the display reduces to (11.6).
+
+\section{Clip cases and tables}\label{app:G.2}
+
+Section 11.6 minimizes \begin{equation}
+L^{\mathrm{PPO}}(\theta)
+=
+-\frac{1}{K}\sum_{k=1}^{K}
+\min\Bigl(
+\rho_k(\theta)\,A_k,\;
+\mathrm{clip}\bigl(\rho_k(\theta),\,1-\varepsilon,\,1+\varepsilon\bigr)\,A_k
+\Bigr).
+\tag{11.9}
+\end{equation} Here \[
+\mathrm{clip}(\rho)
+=
+\begin{cases}
+1-\varepsilon & \text{if }\rho<1-\varepsilon,\\
+\rho & \text{if }1-\varepsilon\le\rho\le 1+\varepsilon,\\
+1+\varepsilon & \text{if }\rho>1+\varepsilon.
+\end{cases}
+\] So the score on one reply is \[
+\min\bigl(\rho A,\ \mathrm{clip}(\rho)\,A\bigr)
+=
+\begin{cases}
+\min\bigl(\rho A,\ (1-\varepsilon)A\bigr) & \text{if }\rho<1-\varepsilon,\\[4pt]
+\rho A & \text{if }1-\varepsilon\le\rho\le 1+\varepsilon,\\[4pt]
+\min\bigl(\rho A,\ (1+\varepsilon)A\bigr) & \text{if }\rho>1+\varepsilon.
+\end{cases}
+\]
+
+\textbf{Range} as $\rho$ runs over $(0,\infty)$:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+ & score range & what is capped \\
+\midrule
+$A>0$ & $(0,\ (1+\varepsilon)A]$ & cannot run to $+\infty$ when $\rho\to\infty$ \\
+$A<0$ & $(-\infty,\ (1-\varepsilon)A]$ & cannot improve past $(1-\varepsilon)A$ when $\rho\to 0$; still $\to-\infty$ when $\rho\to\infty$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Numbers --- $A>0$ (e.g. $A=2$, $\varepsilon=0.2$).}
+
+\begin{center}
+\begin{tabular}{lllll}
+\toprule
+$\rho$ & $\rho A$ & $\mathrm{clip}(\rho)$ & $\mathrm{clip}(\rho)\,A$ & $\min(\rho A,\mathrm{clip}\,A)$ \\
+\midrule
+$1.0$ & $2.0$ & $1.0$ & $2.0$ & $2.0$ \\
+$1.1$ & $2.2$ & $1.1$ & $2.2$ & $2.2$ \\
+$1.2$ & $2.4$ & $1.2$ & $2.4$ & $2.4$ \\
+$1.5$ & $3.0$ & $1.2$ & $2.4$ & $2.4$ \\
+$2.0$ & $4.0$ & $1.2$ & $2.4$ & $2.4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+From $\rho=1$ to $1.2$ the score rises; past $1.2$ the $\min$ stays at $2.4$.
+
+\textbf{Numbers --- $A<0$ (e.g. $A=-2$, $\varepsilon=0.2$).}
+
+\begin{center}
+\begin{tabular}{lllll}
+\toprule
+$\rho$ & $\rho A$ & $\mathrm{clip}(\rho)$ & $\mathrm{clip}(\rho)\,A$ & $\min(\rho A,\mathrm{clip}\,A)$ \\
+\midrule
+$1.0$ & $-2.0$ & $1.0$ & $-2.0$ & $-2.0$ \\
+$0.9$ & $-1.8$ & $0.9$ & $-1.8$ & $-1.8$ \\
+$0.8$ & $-1.6$ & $0.8$ & $-1.6$ & $-1.6$ \\
+$0.5$ & $-1.0$ & $0.8$ & $-1.6$ & $-1.6$ \\
+$0.2$ & $-0.4$ & $0.8$ & $-1.6$ & $-1.6$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+From $\rho=1$ to $0.8$ the score improves; below $0.8$ the $\min$ stays at $-1.6$. If instead $\rho$ rises with $A<0$, $\min$ follows $\rho A\to-\infty$ (e.g. $\rho=2$ gives $\min(-4,-2.4)=-4$), so there is no protection against making a bad reply more likely.
+
+\section{Clip versus KL to $\pi_{\mathrm{ref}}$}\label{app:G.3}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+ & Clip in (11.9) & KL in Section 11.4 \\
+\midrule
+Compares & $\pi_\theta$ to $\pi_{\theta_{\mathrm{old}}}$ (who generated this batch) & $\pi_\theta$ to $\pi_{\mathrm{ref}}$ (trusted SFT model) \\
+Fixes & unstable \textbf{reuse} of one batch & drift or reward hacking over training \\
+Resets & every time $\theta_{\mathrm{old}}\leftarrow\theta$ & $\pi_{\mathrm{ref}}$ stays fixed \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Both can appear together: $R_k$ may include a KL penalty to $\pi_{\mathrm{ref}}$ as in (11.4), while (11.9) still clips $\rho_k$ against $\pi_{\theta_{\mathrm{old}}}$.
+
+\chapter{Rejection Sampling}\label{app:H}
+
+\textbf{Rejection sampling} produces samples from a \textbf{target} $p$ when you can only draw from a \textbf{proposal} $q$ that is easy to sample. It does not reweight those draws. It \textbf{accepts or drops} each one, using a keep-chance $a$ and a die, until the accepted batch has law $p$.
+
+\section{Example}
+
+You are filling a party bowl. Beans must meet hidden requirements (taste, flavor, hardness, ...), but you cannot test those when picking --- you only see \textbf{color}. From color alone you guess the chance a bean meets those requirements: red $80\%$, green $60\%$, blue $40\%$, yellow $20\%$. Those guesses are the keep-chances $a$. You also care about \textbf{color composition in the bowl}: $40\%$ red, $30\%$ green, $20\%$ blue, $10\%$ yellow. That desired composition is the target $p$.
+
+The jar has infinitely many beans, equally mixed. Drawing one at random, each color has probability $\tfrac14$ on every draw (a finite jar of $100$ with $25$ of each would change those odds after each draw if you do not replace). That unchanging draw distribution is the proposal $q$. It is \textbf{not} the bowl composition you want: \[
+q(\mathrm{red})=q(\mathrm{green})=q(\mathrm{blue})=q(\mathrm{yellow})=\tfrac14,
+\] \[
+p(\mathrm{red})=40\%,\quad
+p(\mathrm{green})=30\%,\quad
+p(\mathrm{blue})=20\%,\quad
+p(\mathrm{yellow})=10\%,
+\] \[
+a(\mathrm{red})=80\%,\quad
+a(\mathrm{green})=60\%,\quad
+a(\mathrm{blue})=40\%,\quad
+a(\mathrm{yellow})=20\%.
+\] The die is compared to $a$, not to $p$. $q$ is the jar-draw probability.
+
+\begin{enumerate}
+\item Pick one bean from the jar --- say \textbf{red}.
+\item Look up $a(\mathrm{red})=80\%$.
+\item Roll a $100$-sided die --- get $37$.
+\item $37\%\le 80\%$ → treat it as ``passes,'' put it in the \textbf{bowl}.
+\end{enumerate}
+Draw again and get \textbf{yellow}: guess $20\%$, roll $40$ → $40\%\le 20\%$? \textbf{no} → reject, pick again. Repeat. The bowl approaches the composition you wanted ($p$).
+
+\section{Keep-chance from counts}
+
+Write $c$ for a color. Draw $N$ beans from the jar. About $N\,q(c)$ of them are color $c$. Of those you keep a fraction $a(c)$, so the count of kept beans of color $c$ is $N\,q(c)\,a(c)$. The bowl only has kept beans. Total kept is the same count, summed over all colors ($c'=$ red, green, blue, yellow): \[
+\sum_{c'} N\,q(c')\,a(c')
+=
+N\sum_{c'} q(c')\,a(c').
+\] The fraction of color $c$ in the bowl is (kept $c$) / (total kept): \begin{equation}
+\frac{N\,q(c)\,a(c)}{N\sum_{c'} q(c')\,a(c')}
+=
+\frac{q(c)\,a(c)}{\sum_{c'} q(c')\,a(c')}.
+\tag{H.1}
+\end{equation} $N$ cancels. The denominator is the overall keep rate $P(\mathrm{accept})=\sum_{c'} q(c')\,a(c')$.
+
+\textbf{This example, $N=100$.} Jar equal mix: about $25$ of each color. Keep $25\times 80\%=20$ red, $15$ green, $10$ blue, $5$ yellow. Bowl size $50$. Fraction red $=20/50=40\%$, which is $p(\mathrm{red})$. Same pattern for the others.
+
+You want that bowl fraction to equal the target: \[
+\frac{q(c)\,a(c)}{P(\mathrm{accept})}=p(c)
+\qquad\Rightarrow\qquad
+a(c)=\frac{p(c)\,P(\mathrm{accept})}{q(c)}.
+\] $P(\mathrm{accept})$ is the same for every color. Call it $1/M$ (so $M=1/P(\mathrm{accept})\ge 1$). Then \begin{equation}
+a(c)=\frac{p(c)}{M\,q(c)}.
+\tag{H.2}
+\end{equation} Need $0\le a(c)\le 1$ for every $c$, so $M$ must satisfy $p(c)\le M q(c)$ everywhere; the smallest such choice is $M=\max_c p(c)/q(c)$. Any larger bound also works.
+
+\textbf{This example.} $q(c)=\tfrac14$ for every color and $p=(0.40,0.30,0.20,0.10)$, so $\max p/q=0.40/(1/4)=1.6$. Pick $M=2$ (any $M\ge 1.6$ works; $2$ keeps arithmetic simple). Then $M q=\tfrac12$ and \[
+a(\mathrm{red})=\frac{0.40}{0.50}=0.80,\;
+a(\mathrm{green})=0.60,\;
+a(\mathrm{blue})=0.40,\;
+a(\mathrm{yellow})=0.20.
+\] Overall keep rate $P(\mathrm{accept})=1/M=\tfrac12$, which matches $\sum q\,a=\tfrac14(0.8+0.6+0.4+0.2)=\tfrac12$. Using the tight $M=1.6$ instead would give $a=(100\%,\,75\%,\,50\%,\,25\%)$.
+
+\textbf{Loop.} Given a way to evaluate $p(x)$ and $q(x)$, sample $X\sim q$, and sample $U\sim\mathrm{Unif}(0,1)$ (the die --- not a draw from $a$ itself):
+
+\begin{enumerate}
+\item Compute $M=\max_x p(x)/q(x)$ (or any larger bound), then $a(x)=p(x)/(M q(x))$ as in (H.2).
+\item Sample $X\sim q$.
+\item Sample $U\sim\mathrm{Unif}(0,1)$.
+\item Accept if $U\le a(X)$; else retry.
+\end{enumerate}
+The accepted $X$ has law $p$.
+
+\section{Hard filter}\label{app:H.3}
+
+Same rejection loop, but the keep-chance is only $0$ or $1$: $a(\cdot)\in\{0,1\}$. No die and no $U$. Keep for sure or drop for sure.
+
+Let $\pi(y\mid x)$ be easy to sample. Filter $f(x,y)\in\{0,1\}$. That filter \textbf{is} the keep-chance: $a(y)=f(x,y)$. Copy (H.1) with $q\to\pi(\cdot\mid x)$, $a\to f$, and color $c\to$ reply $y$ (prompt $x$ fixed): \[
+p(y\mid x)
+=
+\frac{\pi(y\mid x)\,f(x,y)}{\sum_{y'} \pi(y'\mid x)\,f(x,y')}.
+\] The denominator is the overall keep rate (pass rate). Write $Z(x)$ for it. Because $f$ is $0$ or $1$, that keep rate is just $P(f=1\mid x)$: \[
+Z(x)=\sum_{y'} \pi(y'\mid x)\,f(x,y')=P(f=1\mid x).
+\] So the same bowl formula is \begin{equation}
+p(y\mid x)=\frac{\pi(y\mid x)\,f(x,y)}{Z(x)}.
+\tag{H.3}
+\end{equation} If $f=0$, the numerator is $0$, so that $y$ is $0\%$ of the bowl. If $f=1$, $p(y\mid x)=\pi(y\mid x)/Z(x)$ --- the same relative mix as $\pi$, among passers only. This is rejection sampling with $a\in\{0,1\}$ and $M=1/Z(x)$. Accepted $y\sim\pi(\cdot\mid x,\,f=1)$.
+
+Toy: four replies, $\pi=(0.40,0.10,0.30,0.20)$, $f=(1,1,0,0)$. Denominator $Z=0.40+0.10+0+0=0.50$. Then $p=(0.80,0.20,0,0)$. Same shape as $N=100$ beans: keep $40$ and $10$, drop $30$ and $20$, bowl size $50$, fractions $40/50$ and $10/50$.
+
+The loop \textbf{never uses} $Z$. The die is compared to $a$, not to the overall keep rate; $Z$ is that overall keep rate, so it is not the cutoff. Here $a=f\in\{0,1\}$, so you skip the die ($f=1$ always keep, $f=0$ always drop). The steps only sample from $\pi$ and check $f$.
+

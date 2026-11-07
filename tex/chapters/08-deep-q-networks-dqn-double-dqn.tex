@@ -1,0 +1,248 @@
+\chapter{Deep Q-Networks and Double DQN}
+
+Chapter 7 put $Q$ into a parameterized approximator and showed the risk when function approximation, bootstrapping, and off-policy learning appear together---the \textbf{deadly triad}. Linear on-policy methods (SARSA FA) drop the off-policy piece and are stable under standard conditions.
+
+In practice a richer approximator than linear FA is desirable---for example for images, raw sensors, or large state spaces. A neural $\hat{Q}(s,a;\theta)$ provides that, while control still keeps an off-policy Q-learning-style $\max$ backup. With bootstrapping, the full deadly triad is present again, so a neural off-policy semi-gradient update can diverge or train unstably, just as linear off-policy FA can. The stability result for on-policy linear TD and SARSA FA from Section 7.2 does not apply to this neural off-policy case.
+
+The goal is still neural FA with an off-policy $\max$ backup; the question is how to train it without that instability. \textbf{DQN} (\citetxt{mnih2015}{Mnih et al., 2015}) answers with two changes to the basic neural Q-learning update: sample past transitions from an \textbf{experience replay} buffer, and bootstrap from a slowly updated \textbf{target network}. That is still ordinary DQN. A later refinement, \textbf{Double DQN} (\citetxt{vanhasselt2016}{van Hasselt et al., 2016}), does not replace those two ideas; it only changes how the $\max$ target is formed---online net chooses the greedy action, target net evaluates it---to reduce value overestimation.
+
+Section 8.1 writes the neural update. Sections 8.2--8.3 cover replay and the target network; 8.4 the DQN loop and updates (8.3)--(8.6); 8.5 adds Double DQN.
+
+\section{Neural action-values}
+
+In linear FA, a fixed map produces a feature vector $\mathbf{x}(s,a)\in\mathbb{R}^d$ for each pair, and
+
+\[
+\hat{Q}(s,a;\mathbf{w})=\mathbf{w}^\top\mathbf{x}(s,a).
+\]
+
+Only $\mathbf{w}$ is learned. A neural network estimates the same $Q(s,a)$, but the features are no longer a fixed $\mathbf{x}$. They are computed inside the network from parameters $\theta$. Write the result as $\hat{Q}(s,a;\theta)$. When $\mathcal{A}$ is discrete and small, the network often maps the state $s$ to a vector of scores, one entry per action. Action choice is unchanged from Chapter 6: pick $A_t$ by $\varepsilon$-greedy or softmax on those scores.
+
+The semi-gradient Q-learning update (7.3) lifts to
+
+\begin{equation}
+\theta
+\leftarrow
+\theta
++
+\alpha
+\bigl(
+R_{t+1}
++
+\gamma\max_{a'}\hat{Q}(S_{t+1},a';\theta)
+-
+\hat{Q}(S_t,A_t;\theta)
+\bigr)
+\nabla_\theta\hat{Q}(S_t,A_t;\theta).
+\tag{8.1}
+\end{equation}
+
+The parameters $\theta$ play the same role as $\mathbf{w}$ in linear FA: they are the weights of $\hat{Q}$, updated by a semi-gradient step on the TD error. The difference is only the form of $\hat{Q}$---linear in $\mathbf{w}$, nonlinear in $\theta$---so the factor after the TD error is $\nabla_\theta\hat{Q}$ from backpropagation instead of $\mathbf{x}_t$.
+
+\section{Experience replay}
+
+Equation (8.1) updates $\theta$ from one transition $(S_t,A_t,R_{t+1},S_{t+1})$. Call that an \textbf{experience}. In the buffer we also store a done flag $d$: $d=1$ if $S_{t+1}$ is terminal (episode ended), and $d=0$ otherwise. So each stored experience is a tuple $(s,a,r,s',d)$.
+
+In ordinary online TD-style learning, each new experience is used once in the update and then discarded. Successive experiences on a trajectory are strongly correlated, so successive gradient steps pull $\theta$ in similar directions. Rare experiences never return.
+
+\textbf{Experience replay} does two things. First, \textbf{store} experiences in a buffer $\mathcal{D}$ instead of discarding them (a fixed-capacity queue of past $(s,a,r,s',d)$ tuples). Second, \textbf{replay} samples experiences from $\mathcal{D}$ after many steps (usually a random minibatch) and uses those samples in the learning update (8.1), rather than only the newest online transition.
+
+Random replay mixes old and new experiences, so learning batches are less correlated than a raw online stream. The same experience can also be used in many updates. The backup is still $\max_{a'}$, so the method remains off-policy; replay only changes how data are stored and reused. Section 8.3 turns to a second issue: the bootstrap target in (8.1) still depends on the same $\theta$ being updated.
+
+\section{Target network}
+
+Replay (Section 8.2) changes \textbf{which} experiences enter the update: sample from $\mathcal{D}$ instead of using only the newest transition. It does not change \textbf{how} the one-step target is built. Inside (8.1) that target is still
+
+\[
+U_t
+=
+R_{t+1}
++
+\gamma\max_{a'}\hat{Q}(S_{t+1},a';\theta)
+\]
+
+(with $U_t=R_{t+1}$ if $S_{t+1}$ is terminal). Both the prediction $\hat{Q}(S_t,A_t;\theta)$ and the bootstrap $\max_{a'}\hat{Q}(S_{t+1},a';\theta)$ depend on the same online weights $\theta$.
+
+That shared dependence is unstable. Semi-gradient already treats $U_t$ as independent of $\theta$ when differentiating (Chapter 7), but after each update $\theta$ has changed, so the next target is recomputed from the new weights. With a nonlinear $\hat{Q}$, those successive targets can change abruptly: every step that improves the prediction also moves the bootstrap that defines the target. Replay does not fix this; it only supplies different experiences $(s,a,r,s',d)$ to the same update whose target still tracks $\theta$.
+
+A \textbf{target network} removes the shared dependence. Keep a second parameter vector $\theta^-$ used only in the bootstrap $\max$. Update the online weights $\theta$ as usual; leave $\theta^-$ fixed for $C$ environment steps, then set $\theta^-\leftarrow\theta$ (or move $\theta^-$ slowly toward $\theta$). Between copies, replayed updates move $\hat{Q}(\cdot;\theta)$ toward a bootstrap that does not change with every gradient step. So $\theta^-$ is not a second learner: it is a periodically refreshed copy of $\theta$, introduced so the target stays fixed while $\theta$ is trained.
+
+For a replayed experience $(s,a,r,s',d)$, replace $\theta$ by $\theta^-$ in the $\max$:
+
+\begin{equation}
+y
+=
+r
++
+\gamma(1-d)\max_{a'}\hat{Q}(s',a';\theta^-).
+\tag{8.2}
+\end{equation}
+
+When $d=1$ (terminal $s'$), the factor $(1-d)$ is $0$, so the $\max\hat{Q}$ term drops out and $y=r$: there is no bootstrap return from a terminal state. When $d=0$, (8.2) is $r+\gamma\max_{a'}\hat{Q}(s',a';\theta^-)$. So (8.2) is $U_t$ from (8.1), with $\theta^-$ in the bootstrap and $(1-d)$ writing the terminal case.
+
+DQN samples a minibatch of $B$ experiences $\{(s_j,a_j,r_j,s'_j,d_j)\}_{j=1}^{B}$ from $\mathcal{D}$ and applies (8.2) to each:
+
+\begin{equation}
+y_j
+=
+r_j
++
+\gamma(1-d_j)\max_{a'}\hat{Q}(s'_j,a';\theta^-),
+\qquad
+j=1,\ldots,B.
+\tag{8.3}
+\end{equation}
+
+Neither side of that difference is the true $Q^*$: $y_j$ is a bootstrap TD target from (8.2), and $\hat{Q}(s_j,a_j;\theta)$ is the online prediction. The one-step error on sample $j$ is still written $y_j-\hat{Q}(s_j,a_j;\theta)$, treating $y_j$ as the regression target. Averaging the squared errors gives the minibatch objective
+
+\begin{equation}
+J(\theta)
+=
+\frac{1}{2B}
+\sum_{j=1}^{B}
+\bigl(y_j-\hat{Q}(s_j,a_j;\theta)\bigr)^2.
+\tag{8.4}
+\end{equation}
+
+Each $y_j$ depends on $\theta^-$ (held fixed for the copy period), not on the online $\theta$ being differentiated. The \textbf{semi-gradient} of (8.4) therefore treats every $y_j$ as constant:
+
+\begin{equation}
+\nabla_\theta J(\theta)
+=
+-
+\frac{1}{B}
+\sum_{j=1}^{B}
+\bigl(y_j-\hat{Q}(s_j,a_j;\theta)\bigr)
+\nabla_\theta\hat{Q}(s_j,a_j;\theta).
+\tag{8.5}
+\end{equation}
+
+Gradient descent on $J$ is then
+
+\begin{equation}
+\theta
+\leftarrow
+\theta
+-
+\alpha\,\nabla_\theta J(\theta)
+=
+\theta
++
+\frac{\alpha}{B}
+\sum_{j=1}^{B}
+\bigl(y_j-\hat{Q}(s_j,a_j;\theta)\bigr)
+\nabla_\theta\hat{Q}(s_j,a_j;\theta).
+\tag{8.6}
+\end{equation}
+
+Compared with (8.1), the experiences come from replay and the bootstrap uses $\theta^-$ through the $y_j$. When $B=1$, (8.3)--(8.6) reduce to a single replayed transition.
+
+\section{DQN}
+
+\begin{implnote}[Algorithm (DQN)]
+Input: network architecture for $\hat{Q}(s,a;\theta)$; replay capacity $N$; batch size $B$; discount $\gamma$; target-copy period $C$; step size $\alpha$ (or optimizer); exploration $\varepsilon$ (possibly scheduled); number of episodes $M$.
+
+Output: online weights $\theta$; greedy policy $\pi(s)=\arg\max_a\hat{Q}(s,a;\theta)$.
+
+\begin{enumerate}
+\item Initialize online weights $\theta$ (e.g. randomly), set target weights to a copy $\theta^-\leftarrow\theta$, empty the replay buffer $\mathcal{D}$ (capacity $N$), and set the global step counter $k\leftarrow 0$.
+\item Loop for episode $=1,2,\ldots,M$:
+\begin{itemize}
+\item Initialize environment and observe starting state $S$.
+\item Loop until $S$ is terminal:
+\begin{itemize}
+\item Choose $A$ from $S$ using a policy based on $\hat{Q}(\cdot,\cdot;\theta)$ (e.g. $\varepsilon$-greedy).
+\item Take $A$; observe $R$, $S'$, and done flag $d$ ($d=1$ if $S'$ terminal, else $0$).
+\item Store experience $(S,A,R,S',d)$ in $\mathcal{D}$ (evict oldest if $|\mathcal{D}|=N$).
+\item If $|\mathcal{D}|\geq B$:
+\begin{itemize}
+\item Sample a minibatch of $B$ experiences $\{(s_j,a_j,r_j,s'_j,d_j)\}_{j=1}^{B}$ uniformly from $\mathcal{D}$.
+\item For each $j=1,\ldots,B$:
+\begin{itemize}
+\item $y_j\leftarrow r_j+\gamma(1-d_j)\max_{a'}\hat{Q}(s'_j,a';\theta^-)$.
+\end{itemize}
+\item $\theta\leftarrow\theta+\dfrac{\alpha}{B}\sum_{j=1}^{B}\bigl(y_j-\hat{Q}(s_j,a_j;\theta)\bigr)\nabla_\theta\hat{Q}(s_j,a_j;\theta)$.
+\end{itemize}
+\item $k\leftarrow k+1$.
+\item If $k\bmod C=0$: set $\theta^-\leftarrow\theta$.
+\item $S\leftarrow S'$.
+\end{itemize}
+\end{itemize}
+\item Return $\theta$ and $\pi(s)=\arg\max_a\hat{Q}(s,a;\theta)$.
+\end{enumerate}
+
+\end{implnote}
+
+\lstinputlisting{../code/ch08/dqn.py}
+
+
+\section{Double DQN}
+
+DQN already uses replay and a target network $\theta^-$. Its target is still a $\max$ over next-action values under $\theta^-$. That $\max$ both \textbf{selects} the greedy next action and \textbf{evaluates} it, using the same weights for both.
+
+Because $\hat{Q}$ is noisy, $\arg\max$ returns the action with the highest current estimate---including when that estimate is too high by noise---and that value enters $y$. Learned values therefore tend to run \textbf{high} (\textbf{overestimation}). Replay and $\theta^-$ do not break this coupling.
+
+That select-and-evaluate split is the Double Q-learning idea of \citetxt{vanhasselt2010}{van Hasselt, 2010}: one estimate picks the greedy action, another scores it, so a noisy $\max$ is not used for both jobs. \textbf{Double DQN} (\citetxt{vanhasselt2016}{van Hasselt et al., 2016}) keeps DQN's replay buffer $\mathcal{D}$ and target weights $\theta^-$ and applies the same split with the online net and the target net: $\theta$ selects the greedy action; $\theta^-$ evaluates it. A high score under $\theta$ need not be high under $\theta^-$, so it is not copied straight into $y$.
+
+Ordinary DQN:
+
+\[
+y
+=
+r
++
+\gamma(1-d)\max_{a'}\hat{Q}(s',a';\theta^-),
+\]
+
+i.e. select and evaluate with $\theta^-$:
+
+\[
+a^*
+=
+\arg\max_{a'}\hat{Q}(s',a';\theta^-),
+\qquad
+y
+=
+r
++
+\gamma(1-d)\,\hat{Q}(s',a^*;\theta^-).
+\]
+
+Double DQN selects with $\theta$ instead:
+
+\[
+a^*
+=
+\arg\max_{a'}\hat{Q}(s',a';\theta),
+\qquad
+y
+=
+r
++
+\gamma(1-d)\,\hat{Q}(s',a^*;\theta^-).
+\]
+
+For a minibatch:
+
+\begin{equation}
+y_j
+=
+r_j
++
+\gamma(1-d_j)\,
+\hat{Q}\Bigl(
+s'_j,
+\arg\max_{a'}\hat{Q}(s'_j,a';\theta);
+\theta^-
+\Bigr).
+\tag{8.7}
+\end{equation}
+
+Replace (8.3) by (8.7); the loss (8.4)--(8.6), replay, and $\theta^-\leftarrow\theta$ stay unchanged.
+
+In the program of Section 8.4, replace the \texttt{with torch.no\_grad():} block by
+
+\lstinputlisting{../code/ch08/double_dqn_target.py}
+
+
+DQN (and Double DQN) stay \textbf{value-based}. They learn $\hat{Q}$ and choose actions from it. Chapter 9 instead parameterizes $\pi_\theta(a\mid s)$ directly and optimizes expected return by policy gradients.
